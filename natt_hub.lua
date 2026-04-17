@@ -1,26 +1,83 @@
--- [[ NattHUB | Wind Edition ]]
+-- [[ NattHUB | Sailor Piece ]]
 -- Powered by WindUI Library
 -- Created by Antigravity (Google DeepMind)
 
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
 local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
 
 -- [[ CONFIGURATION ]]
 local Config = {
-    Title = "NattHUB | Wind",
+    Title = "NattHUB | Sailor Piece",
     Icon = "solar:cat-bold",
     LogoID = "rbxassetid://117953684635635",
-    Version = "2.6.0",
+    Version = "2.6.1",
 }
 
--- [[ WINDOW INITIALIZATION ]]
+-- [[ LOADING ANIMATION SYSTEM - RUNS FIRST ]]
+local LoaderGui = Instance.new("ScreenGui")
+LoaderGui.Name = "NattHUB_Loader"
+LoaderGui.Parent = PlayerGui
+LoaderGui.DisplayOrder = 999
+LoaderGui.ResetOnSpawn = false
+
+local LoaderFrame = Instance.new("Frame")
+LoaderFrame.Name = "Loader"
+LoaderFrame.Parent = LoaderGui
+LoaderFrame.BackgroundColor3 = Color3.fromRGB(3, 3, 5)
+LoaderFrame.Size = UDim2.fromScale(1, 1)
+LoaderFrame.ZIndex = 1
+
+local LoaderLogo = Instance.new("ImageLabel")
+LoaderLogo.Name = "Logo"
+LoaderLogo.Parent = LoaderFrame
+LoaderLogo.BackgroundTransparency = 1
+LoaderLogo.AnchorPoint = Vector2.new(0.5, 0.5)
+LoaderLogo.Position = UDim2.fromScale(0.5, 0.5)
+LoaderLogo.Size = UDim2.fromOffset(140, 140)
+LoaderLogo.Image = Config.LogoID
+LoaderLogo.ZIndex = 2
+
+local function RunLoader()
+    -- Start Drift Animation (Concurrent)
+    local driftInfo = TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+    local driftTween = TweenService:Create(LoaderLogo, driftInfo, {
+        Position = UDim2.fromScale(0.525, 0.525),
+        Size = UDim2.fromOffset(154, 154)
+    })
+    driftTween:Play()
+
+    -- Run Split Spin Animation (25% spin, 75% pause)
+    for i = 1, 3 do
+        local spinInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+        local spinTween = TweenService:Create(LoaderLogo, spinInfo, {Rotation = i * 360})
+        spinTween:Play()
+        spinTween.Completed:Wait()
+        task.wait(0.75)
+    end
+
+    -- Cleanup & Transition
+    driftTween:Cancel()
+    local fadeInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    TweenService:Create(LoaderFrame, fadeInfo, {BackgroundTransparency = 1}):Play()
+    TweenService:Create(LoaderLogo, fadeInfo, {ImageTransparency = 1}):Play()
+    task.wait(0.8)
+    LoaderGui:Destroy()
+end
+
+-- Spawn loader immediately while the rest of the script initializes
+task.spawn(RunLoader)
+
+-- [[ WINDUI INITIALIZATION ]]
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+
 local Window = WindUI:CreateWindow({
     Title = Config.Title,
-    Icon = Config.Icon,
+    Icon = Config.LogoID,
     Author = "by Natt",
     Folder = "NattHUB_Wind_Settings",
-    Size = UDim2.fromOffset(620, 500), -- Increased size for more content
+    Size = UDim2.fromOffset(620, 500),
     Transparent = true, 
     Theme = "Dark",
     ButtonsType = "Mac",
@@ -54,14 +111,14 @@ MainFarm:Toggle({ Title = "Auto Collect Drops", Desc = "Picks up items automatic
 -- [[ BOSS FARM TAB ]]
 local BossTab = Window:Tab({ Title = "Boss Farm", Icon = "solar:shield-danger-bold" })
 local BossSec = BossTab:Section({ Title = "Legendary Encounters" })
-BossSec:Dropdown({ Title = "Select Boss", Desc = "Choose which boss to farm", Values = {"Lord Shura", "Void King", "Ancient Dragon"}, Callback = function(v) end })
-BossSec:Toggle({ Title = "Auto Spawn Boss", Desc = "Spawns boss when available", Value = false, Callback = function(v) end })
+BossSec:Dropdown({ Title = "Select Boss", Values = {"Lord Shura", "Void King", "Ancient Dragon"}, Callback = function(v) end })
+BossSec:Toggle({ Title = "Auto Spawn Boss", Value = false, Callback = function(v) end })
 
 -- [[ DUNGEON TAB ]]
 local DungeonTab = Window:Tab({ Title = "Dungeon", Icon = "solar:ghost-bold" })
 local DungSec = DungeonTab:Section({ Title = "Dungeon Raiding" })
-DungSec:Toggle({ Title = "Auto Start Dungeon", Desc = "Starts the next floor automatically", Value = false, Callback = function(v) end })
-DungSec:Toggle({ Title = "Kill Aura", Desc = "Damages players in radius", Value = false, Callback = function(v) end })
+DungSec:Toggle({ Title = "Auto Start Dungeon", Value = false, Callback = function(v) end })
+DungSec:Toggle({ Title = "Kill Aura", Value = false, Callback = function(v) end })
 
 -- [[ AUTO STATS TAB ]]
 local StatsTab = Window:Tab({ Title = "Auto Stats", Icon = "solar:chart-square-bold" })
@@ -102,77 +159,20 @@ MiscSec:Button({ Title = "Rejoin Server", Callback = function() game:GetService(
 local PlayerTab = Window:Tab({ Title = "Player", Icon = "solar:user-bold" })
 local ProfileSec = PlayerTab:Section({ Title = "Identity" })
 ProfileSec:Paragraph({ Title = "DisplayName", Desc = Player.DisplayName })
-local PopLabel = PlayerTab:Section({ Title = "Server" }):Paragraph({ Title = "Population", Desc = #Players:GetPlayers() .. " / " .. Players.MaxPlayers })
+local StatGrid = PlayerTab:Section({ Title = "Server" })
+local PopLabel = StatGrid:Paragraph({ Title = "Population", Desc = #Players:GetPlayers() .. " / " .. Players.MaxPlayers })
 
 -- [[ SETTING GUI TAB ]]
 local SettingTab = Window:Tab({ Title = "Setting Gui", Icon = "solar:palet-2-bold" })
 local UISec = SettingTab:Section({ Title = "UI Customization" })
-UISec:Button({
-    Title = "Reset UI Position",
-    Callback = function() Window:ResetPosition() end,
-})
-UISec:Toggle({
-    Title = "Transparent Mode",
-    Value = true,
-    Callback = function(v) Window:SetTransparency(v) end,
-})
+UISec:Button({ Title = "Reset UI Position", Callback = function() Window:ResetPosition() end })
+UISec:Toggle({ Title = "Transparent Mode", Value = true, Callback = function(v) Window:SetTransparency(v) end })
 
 -- [[ FINALIZATION ]]
-WindUI:Notify({ Title = "NattHUB Loaded", Content = "Ready for automation!", Icon = "solar:verified-check-bold", Duration = 5 })
-
 local function UpdatePop()
     PopLabel:Set({ Title = "Population", Desc = #Players:GetPlayers() .. " / " .. Players.MaxPlayers })
 end
 Players.PlayerAdded:Connect(UpdatePop)
 Players.PlayerRemoving:Connect(UpdatePop)
 
--- [[ LOADING ANIMATION UI ]]
-local LoaderFrame = Instance.new("Frame")
-LoaderFrame.Name = "Loader"
-LoaderFrame.Parent = PlayerGui:WaitForChild("NattHUB") -- Existing WindUI ScreenGui
-LoaderFrame.BackgroundColor3 = Color3.fromRGB(3, 3, 5)
-LoaderFrame.Size = UDim2.fromScale(1, 1)
-LoaderFrame.ZIndex = 5000 -- Top of everything
-
-local LoaderLogo = Instance.new("ImageLabel")
-LoaderLogo.Name = "Logo"
-LoaderLogo.Parent = LoaderFrame
-LoaderLogo.BackgroundTransparency = 1
-LoaderLogo.AnchorPoint = Vector2.new(0.5, 0.5)
-LoaderLogo.Position = UDim2.fromScale(0.5, 0.5)
-LoaderLogo.Size = UDim2.fromOffset(140, 140)
-LoaderLogo.Image = Config.LogoID
-LoaderLogo.ZIndex = 5001
-
--- [[ ANIMATION SEQUENCER ]]
-local function RunLoader()
-    -- Start Drift Animation (Concurrent)
-    -- translate(5%, 5%) scale(1.1)
-    local driftInfo = TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
-    local driftTween = TweenService:Create(LoaderLogo, driftInfo, {
-        Position = UDim2.fromScale(0.525, 0.525),
-        Size = UDim2.fromOffset(154, 154)
-    })
-    driftTween:Play()
-
-    -- Run Spin Animation in Loops
-    -- 0% (0s): 0deg | 25% (0.25s): 360deg | 100% (1s): 360deg
-    for i = 1, 3 do
-        local spinInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-        local spinTween = TweenService:Create(LoaderLogo, spinInfo, {Rotation = i * 360})
-        spinTween:Play()
-        spinTween.Completed:Wait()
-        task.wait(0.75) -- Pause for the remaining 75% of the cycle
-    end
-
-    -- Cleanup & Fade Out
-    driftTween:Cancel()
-    local fadeInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-    TweenService:Create(LoaderFrame, fadeInfo, {BackgroundTransparency = 1}):Play()
-    TweenService:Create(LoaderLogo, fadeInfo, {ImageTransparency = 1}):Play()
-    task.wait(0.8)
-    LoaderFrame:Destroy()
-end
-
-task.spawn(RunLoader)
 print("NattHUB | Full Suite Initialized")
