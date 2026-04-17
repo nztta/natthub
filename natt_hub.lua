@@ -17,7 +17,7 @@ local Config = {
     SidebarTransparency = 0.25,
     Font = Enum.Font.GothamMedium,
     TitleFont = Enum.Font.GothamBold,
-    LogoID = "rbxassetid://0", -- Replace with your uploaded Asset ID
+    LogoID = "rbxassetid://117953684635635", -- User provided Logo Asset ID
 }
 
 -- Blur Effect Logic
