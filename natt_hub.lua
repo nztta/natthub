@@ -126,4 +126,53 @@ end
 Players.PlayerAdded:Connect(UpdatePop)
 Players.PlayerRemoving:Connect(UpdatePop)
 
+-- [[ LOADING ANIMATION UI ]]
+local LoaderFrame = Instance.new("Frame")
+LoaderFrame.Name = "Loader"
+LoaderFrame.Parent = PlayerGui:WaitForChild("NattHUB") -- Existing WindUI ScreenGui
+LoaderFrame.BackgroundColor3 = Color3.fromRGB(3, 3, 5)
+LoaderFrame.Size = UDim2.fromScale(1, 1)
+LoaderFrame.ZIndex = 5000 -- Top of everything
+
+local LoaderLogo = Instance.new("ImageLabel")
+LoaderLogo.Name = "Logo"
+LoaderLogo.Parent = LoaderFrame
+LoaderLogo.BackgroundTransparency = 1
+LoaderLogo.AnchorPoint = Vector2.new(0.5, 0.5)
+LoaderLogo.Position = UDim2.fromScale(0.5, 0.5)
+LoaderLogo.Size = UDim2.fromOffset(140, 140)
+LoaderLogo.Image = Config.LogoID
+LoaderLogo.ZIndex = 5001
+
+-- [[ ANIMATION SEQUENCER ]]
+local function RunLoader()
+    -- Start Drift Animation (Concurrent)
+    -- translate(5%, 5%) scale(1.1)
+    local driftInfo = TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+    local driftTween = TweenService:Create(LoaderLogo, driftInfo, {
+        Position = UDim2.fromScale(0.525, 0.525),
+        Size = UDim2.fromOffset(154, 154)
+    })
+    driftTween:Play()
+
+    -- Run Spin Animation in Loops
+    -- 0% (0s): 0deg | 25% (0.25s): 360deg | 100% (1s): 360deg
+    for i = 1, 3 do
+        local spinInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+        local spinTween = TweenService:Create(LoaderLogo, spinInfo, {Rotation = i * 360})
+        spinTween:Play()
+        spinTween.Completed:Wait()
+        task.wait(0.75) -- Pause for the remaining 75% of the cycle
+    end
+
+    -- Cleanup & Fade Out
+    driftTween:Cancel()
+    local fadeInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    TweenService:Create(LoaderFrame, fadeInfo, {BackgroundTransparency = 1}):Play()
+    TweenService:Create(LoaderLogo, fadeInfo, {ImageTransparency = 1}):Play()
+    task.wait(0.8)
+    LoaderFrame:Destroy()
+end
+
+task.spawn(RunLoader)
 print("NattHUB | Full Suite Initialized")
