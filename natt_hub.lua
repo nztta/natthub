@@ -418,30 +418,54 @@ CreateDropdown(TeleportContainer, "Destination", Locations, function(selected)
 end)
 
 -- Draggable Functionality
-local function MakeDraggable(frame)
-    local dragging, dragInput, dragStart, startPos
-    frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
-        end
-    end)
-    frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-end
-
 MakeDraggable(Main)
+
+-- Toggle Button (Circle Popup)
+local ToggleButton = Instance.new("Frame")
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Parent = ScreenGui
+ToggleButton.BackgroundColor3 = Config.OffBlack
+ToggleButton.Position = UDim2.new(0, 20, 0.5, -25)
+ToggleButton.Size = UDim2.new(0, 50, 0, 50)
+ToggleButton.Visible = false
+ApplyGlassEffect(ToggleButton, 0.5)
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(1, 0)
+ToggleCorner.Parent = ToggleButton
+
+local ToggleLogo = Instance.new("ImageLabel")
+ToggleLogo.Name = "Logo"
+ToggleLogo.Parent = ToggleButton
+ToggleLogo.BackgroundTransparency = 1
+ToggleLogo.Position = UDim2.new(0.15, 0, 0.15, 0)
+ToggleLogo.Size = UDim2.new(0.7, 0, 0.7, 0)
+ToggleLogo.Image = Config.LogoID
+ToggleLogo.Visible = (Config.LogoID ~= "rbxassetid://0")
+
+local ToggleText = Instance.new("TextLabel")
+ToggleText.Parent = ToggleButton
+ToggleText.BackgroundTransparency = 1
+ToggleText.Size = UDim2.new(1, 0, 1, 0)
+ToggleText.Font = Config.TitleFont
+ToggleText.Text = "N"
+ToggleText.TextColor3 = Config.OffWhite
+ToggleText.TextSize = 20
+ToggleText.Visible = (Config.LogoID == "rbxassetid://0")
+
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Parent = ToggleButton
+ToggleBtn.BackgroundTransparency = 1
+ToggleBtn.Size = UDim2.new(1, 0, 1, 0)
+ToggleBtn.Text = ""
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    Main.Visible = true
+    ToggleButton.Visible = false
+    SetBlur(true)
+end)
+
+MakeDraggable(ToggleButton)
 
 -- Initialization
 SwitchTab(TeleportTab, TeleportPage)
@@ -460,8 +484,9 @@ CloseBtn.TextColor3 = Config.OffWhite
 CloseBtn.TextSize = 18
 
 CloseBtn.MouseButton1Click:Connect(function()
+    Main.Visible = false
+    ToggleButton.Visible = true
     SetBlur(false)
-    ScreenGui:Destroy()
 end)
 
 print("NattHUB Glassmorphism Ready!")
