@@ -405,9 +405,6 @@ local function CreateDropdown(parent, title, options, callback)
     end
 end
 
--- Teleport Logic
-local Locations = {"Starter", "Jungle", "Desert", "Snow", "Sailor", "Shibuya", "HallowIsland", "Boss", "Dungeon", "Shijuku", "Slime", "Academy", "Kadgement", "Ninja", "Lawless", "Tower"}
-
 CreateDropdown(TeleportContainer, "Destination", Locations, function(selected)
     local args = { [1] = selected }
     local remotes = game:GetService("ReplicatedStorage"):WaitForChild("Remotes", 5)
@@ -416,6 +413,154 @@ CreateDropdown(TeleportContainer, "Destination", Locations, function(selected)
         if remote then remote:FireServer(unpack(args)) end
     end
 end)
+
+-- Player Page Implementation
+local PlayerPage = CreatePage("Player")
+local PlayerTab = CreateTab("Player", PlayerPage)
+
+-- Avatar Section
+local AvatarFrame = Instance.new("Frame")
+AvatarFrame.Name = "AvatarFrame"
+AvatarFrame.Parent = PlayerPage
+AvatarFrame.BackgroundColor3 = Config.OffBlack
+AvatarFrame.BackgroundTransparency = 0.6
+AvatarFrame.Size = UDim2.new(1, 0, 0, 80)
+
+local AFCorner = Instance.new("UICorner")
+AFCorner.CornerRadius = UDim.new(0, 10)
+AFCorner.Parent = AvatarFrame
+
+local AFStroke = Instance.new("UIStroke")
+AFStroke.Thickness = 1
+AFStroke.Color = Config.OffWhite
+AFStroke.Transparency = 0.9
+AFStroke.Parent = AvatarFrame
+
+local AvatarCircle = Instance.new("ImageLabel")
+AvatarCircle.Name = "Avatar"
+AvatarCircle.Parent = AvatarFrame
+AvatarCircle.BackgroundTransparency = 1
+AvatarCircle.Position = UDim2.new(0, 15, 0.5, -25)
+AvatarCircle.Size = UDim2.new(0, 50, 0, 50)
+
+local AVCorner = Instance.new("UICorner")
+AVCorner.CornerRadius = UDim.new(1, 0)
+AVCorner.Parent = AvatarCircle
+
+local AVStroke = Instance.new("UIStroke")
+AVStroke.Thickness = 2
+AVStroke.Color = Config.OffWhite
+AVStroke.Transparency = 0.8
+AVStroke.Parent = AvatarCircle
+
+-- Fetch Thumbnails
+spawn(function()
+    local thumb, success = Players:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+    if success then AvatarCircle.Image = thumb end
+end)
+
+local PlayerWelcome = Instance.new("TextLabel")
+PlayerWelcome.Parent = AvatarFrame
+PlayerWelcome.BackgroundTransparency = 1
+PlayerWelcome.Position = UDim2.new(0, 75, 0, 0)
+PlayerWelcome.Size = UDim2.new(1, -85, 1, 0)
+PlayerWelcome.Font = Config.TitleFont
+PlayerWelcome.Text = "Welcome, " .. (Player.DisplayName or Player.Name)
+PlayerWelcome.TextColor3 = Config.OffWhite
+PlayerWelcome.TextSize = 16
+PlayerWelcome.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Personal Info Card
+local PersonalCard = Instance.new("Frame")
+PersonalCard.Name = "PersonalCard"
+PersonalCard.Parent = PlayerPage
+PersonalCard.BackgroundColor3 = Config.OffBlack
+PersonalCard.BackgroundTransparency = 0.7
+PersonalCard.Size = UDim2.new(1, 0, 0, 110)
+
+local PCorner = Instance.new("UICorner")
+PCorner.CornerRadius = UDim.new(0, 10)
+PCorner.Parent = PersonalCard
+
+local PCStroke = Instance.new("UIStroke")
+PCStroke.Thickness = 1
+PCStroke.Color = Config.OffWhite
+PCStroke.Transparency = 0.95
+PCStroke.Parent = PersonalCard
+
+local PCList = Instance.new("UIListLayout")
+PCList.Parent = PersonalCard
+PCList.Padding = UDim.new(0, 5)
+
+local function CreateInfoLabel(parent, label, value)
+    local Frame = Instance.new("Frame")
+    Frame.BackgroundTransparency = 1
+    Frame.Size = UDim2.new(1, 0, 0, 22)
+    Frame.Parent = parent
+    
+    local L = Instance.new("TextLabel")
+    L.BackgroundTransparency = 1
+    L.Position = UDim2.new(0, 15, 0, 0)
+    L.Size = UDim2.new(0, 100, 1, 0)
+    L.Font = Config.Font
+    L.Text = label .. ":"
+    L.TextColor3 = Color3.fromRGB(150, 150, 150)
+    L.TextSize = 13
+    L.TextXAlignment = Enum.TextXAlignment.Left
+    L.Parent = Frame
+    
+    local V = Instance.new("TextLabel")
+    V.BackgroundTransparency = 1
+    V.Position = UDim2.new(0, 110, 0, 0)
+    V.Size = UDim2.new(1, -125, 1, 0)
+    V.Font = Config.Font
+    V.Text = tostring(value)
+    V.TextColor3 = Config.OffWhite
+    V.TextSize = 13
+    V.TextXAlignment = Enum.TextXAlignment.Left
+    V.Parent = Frame
+    
+    return V
+end
+
+Instance.new("Frame", PersonalCard).Size = UDim2.new(1, 0, 0, 5) -- Padding
+CreateInfoLabel(PersonalCard, "Display Name", Player.DisplayName)
+CreateInfoLabel(PersonalCard, "Username", Player.Name)
+CreateInfoLabel(PersonalCard, "User ID", Player.UserId)
+CreateInfoLabel(PersonalCard, "Account Age", Player.AccountAge .. " Days")
+
+-- Server Info Card
+local ServerCard = Instance.new("Frame")
+ServerCard.Name = "ServerCard"
+ServerCard.Parent = PlayerPage
+ServerCard.BackgroundColor3 = Config.OffBlack
+ServerCard.BackgroundTransparency = 0.7
+ServerCard.Size = UDim2.new(1, 0, 0, 70)
+
+local SCorner = Instance.new("UICorner")
+SCorner.CornerRadius = UDim.new(0, 10)
+SCorner.Parent = ServerCard
+
+local SStroke = Instance.new("UIStroke")
+SStroke.Thickness = 1
+SStroke.Color = Config.OffWhite
+SStroke.Transparency = 0.95
+SStroke.Parent = ServerCard
+
+local SCList = Instance.new("UIListLayout")
+SCList.Parent = ServerCard
+SCList.Padding = UDim.new(0, 5)
+
+Instance.new("Frame", ServerCard).Size = UDim2.new(1, 0, 0, 5) -- Padding
+local PopulationLabel = CreateInfoLabel(ServerCard, "Population", #Players:GetPlayers() .. " / " .. Players.MaxPlayers)
+CreateInfoLabel(ServerCard, "Server ID", game.JobId:sub(1, 10) .. "...")
+
+local function UpdatePop()
+    PopulationLabel.Text = #Players:GetPlayers() .. " / " .. Players.MaxPlayers
+end
+
+Players.PlayerAdded:Connect(UpdatePop)
+Players.PlayerRemoving:Connect(UpdatePop)
 
 -- Draggable Functionality
 MakeDraggable(Main)
