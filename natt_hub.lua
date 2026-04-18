@@ -88,6 +88,7 @@ local State = {
     AutoFarmEnabled = false,
     AutoBossEnabled = false,
     AutoStatsEnabled = false,
+    AutoClickEnabled = false,
     AutoSkillEnabled = false,
     AutoWeaponEnabled = false,
     SelectedWeapon = "None",
@@ -134,44 +135,63 @@ function Helpers.To(targetCFrame, stayStill)
         local hrp = Player.Character.HumanoidRootPart
         local dist = (targetCFrame.Position - hrp.Position).Magnitude
 
-        -- 1. Anti-Fall Optimization: Lock before anything else if we are farming
-        if State.AutoFarmEnabled or State.AutoBossEnabled then
-            if stayStill then
-                hrp.Anchored = true
-            end
-        end
-
         warn(string.format("[NattHUB Debug] Moving: Dist %.1f | stayStill: %s", dist, tostring(stayStill)))
 
+        local isAutomating = State.AutoFarmEnabled or State.AutoBossEnabled
+
+        -- Cleanup BV if not automating
+        if not isAutomating or not stayStill then
+            local bv = hrp:FindFirstChild("NattHUB_AntiFall")
+            if bv then bv:Destroy() end
+            hrp.Anchored = false
+            if not isAutomating then return end
+        end
+
         if dist < 3 then
-            -- Snap CFrame smoothly to prevent micro-adjustments
-            if stayStill and (State.AutoFarmEnabled or State.AutoBossEnabled) then
+            if stayStill and isAutomating then
+                -- Unleash the Anchor so we can deal damage natively!
+                hrp.Anchored = false
+                -- Use BodyVelocity to lock us perfectly in the air without tripping anti-cheat
+                local bv = hrp:FindFirstChild("NattHUB_AntiFall")
+                if not bv then
+                    bv = Instance.new("BodyVelocity")
+                    bv.Name = "NattHUB_AntiFall"
+                    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                    bv.Velocity = Vector3.new(0, 0, 0)
+                    bv.P = 125000
+                    bv.Parent = hrp
+                end
                 hrp.CFrame = targetCFrame
-                hrp.Anchored = true
             end
             return
         end
 
+        -- Safe traveling: Lock anchored to tween effortlessly across the map
+        hrp.Anchored = true
+        local prevBv = hrp:FindFirstChild("NattHUB_AntiFall")
+        if prevBv then prevBv:Destroy() end 
+
         if dist > 30 then
             warn("[NattHUB Debug] Distance > 30: Starting Tween Movement")
-            -- We do NOT unanchor! Keep anchoring TRUE to float smoothly through the air with TweenService
-            local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear),
-                { CFrame = targetCFrame })
+            local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear), { CFrame = targetCFrame })
             tween:Play()
             task.wait(dist / 250)
-
-            if not (State.AutoFarmEnabled or State.AutoBossEnabled) then
-                warn("[NattHUB Debug] Automation Stopped during movement. Cancelling Anchor.")
-                hrp.Anchored = false
-                return
-            end
         else
             hrp.CFrame = targetCFrame
         end
 
-        if stayStill and (State.AutoFarmEnabled or State.AutoBossEnabled) then
-            hrp.Anchored = true
-            warn("[NattHUB Debug] Target Reached. Anchored: true")
+        -- Upon arrival, re-evaluate lock state
+        if stayStill and isAutomating then
+            hrp.Anchored = false
+            local postBv = hrp:FindFirstChild("NattHUB_AntiFall")
+            if not postBv then
+                postBv = Instance.new("BodyVelocity")
+                postBv.Name = "NattHUB_AntiFall"
+                postBv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                postBv.Velocity = Vector3.new(0, 0, 0)
+                postBv.P = 125000
+                postBv.Parent = hrp
+            end
         else
             hrp.Anchored = false
         end
@@ -484,7 +504,8 @@ local function CreateTabs()
         Callback = function(v) State.AutoWeaponEnabled = v end
     })
 
-    local SkillSec = MainTab:Section({ Title = "Auto Skills", Opened = false })
+    local SkillSec = MainTab:Section({ Title = "Auto Skills & Combat", Opened = false })
+    SkillSec:Toggle({ Title = "Fast Auto Click", Value = State.AutoClickEnabled, Callback = function(v) State.AutoClickEnabled = v end })
     SkillSec:Toggle({ Title = "Auto Use Skills", Value = State.AutoSkillEnabled, Callback = function(v) State.AutoSkillEnabled = v end })
     SkillSec:Toggle({ Title = "Use Z Skill", Value = false, Callback = function(v) SkillToggles.Z = v end })
     SkillSec:Toggle({ Title = "Use X Skill", Value = false, Callback = function(v) SkillToggles.X = v end })
@@ -812,6 +833,23 @@ local function InitAutomation()
                         if SkillToggles.C then reqAbility:FireServer(3) end
                         if SkillToggles.V then reqAbility:FireServer(4) end
                         if SkillToggles.F then reqAbility:FireServer(5) end
+                    end
+                end
+            end)
+        end
+    end)
+
+    -- Fast Auto Click Loop
+    task.spawn(function()
+        local RunService = game:GetService("RunService")
+        while task.wait(0.01) do -- 100 TPS ultra fast click loop
+            pcall(function()
+                if State.AutoClickEnabled and (State.AutoFarmEnabled or State.AutoBossEnabled) then
+                    local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
+                    local remotes = combat and combat:FindFirstChild("Remotes")
+                    local reqHit = remotes and remotes:FindFirstChild("RequestHit")
+                    if reqHit then
+                        reqHit:FireServer()
                     end
                 end
             end)
