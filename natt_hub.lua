@@ -80,24 +80,26 @@ end
 local Window = WindUI:CreateWindow({
     Title = Constants.Config.Title,
     Author = Constants.Config.Author,
-    Folder = Constants.Config.Folder,
-    Icon = Constants.Config.Icon,
-    Theme = "Dark",
-    Size = UDim2.fromOffset(580, 460),
-    Transparent = true,
-    SideBarSize = 200,
-    HideSearchBar = false
+    Theme = "Dark"
 })
 
 -- [[ HOME TAB ]]
 local HomeTab = Window:Tab({ Title = "Home", Icon = "solar:home-2-bold" })
 
-local PlayerSec = HomeTab:Section({ Title = "Player Information", Opened = true })
+local PlayerSec = HomeTab:Section({ Title = "Player Stats", Opened = true })
 UI.LevelLabel = PlayerSec:Paragraph({ Title = "Level", Desc = "Loading..." })
 UI.ExpLabel = PlayerSec:Paragraph({ Title = "Experience", Desc = "0 EXP" })
 UI.GemsLabel = PlayerSec:Paragraph({ Title = "Gems", Desc = "0" })
 UI.MoneyLabel = PlayerSec:Paragraph({ Title = "Money", Desc = "0" })
 UI.PointsLabel = PlayerSec:Paragraph({ Title = "Stat Points", Desc = "0" })
+
+local SafetySec = HomeTab:Section({ Title = "Protection", Opened = true })
+SafetySec:Toggle({
+    Title = "Health Safety (20%)",
+    Desc = "Auto-heals/teleports when low health",
+    Value = State.AutoHealthSafety,
+    Callback = function(v) State.AutoHealthSafety = v end
+})
 
 local DashboardSec = HomeTab:Section({ Title = "Engine Status", Opened = true })
 UI.BotLabel = DashboardSec:Paragraph({ Title = "Bot status", Desc = "Initializing" })
