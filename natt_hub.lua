@@ -147,7 +147,13 @@ GenSec:Toggle({ Title = "Infinite Stamina", Value = false, Callback = function(v
 
 local MainTab = Window:Tab({ Title = "Main", Icon = "solar:star-bold" })
 local MainFarm = MainTab:Section({ Title = "Fast Farming" })
-MainFarm:Toggle({ Title = "Auto Farm Level", Value = false, Callback = function(v) end })
+MainFarm:Toggle({ 
+    Title = "Auto Farm Level", 
+    Desc = "Target quest-related enemies", 
+    Value = false, 
+    Callback = function(v) AutoFarmEnabled = v end 
+})
+MainFarm:Toggle({ Title = "Auto Collect Drops", Value = false, Callback = function(v) end })
 
 local BossTab = Window:Tab({ Title = "Boss Farm", Icon = "solar:shield-danger-bold" })
 local BossSec = BossTab:Section({ Title = "Legendary Encounters" })
@@ -256,6 +262,82 @@ task.spawn(function()
                             questAccept:FireServer(npc)
                             WindUI:Notify({ Title = "Auto Quest", Content = "Accepted quest from " .. targetNPCName, Duration = 2 })
                         end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- [[ FARMING DATA ]]
+local MobMapping = {
+    QuestNPC1 = "Thief",
+    QuestNPC2 = "Thief Boss",
+    QuestNPC3 = "Monkey",
+    QuestNPC4 = "Monkey Boss",
+    QuestNPC5 = "Desert Bandit",
+    QuestNPC6 = "Desert Boss",
+    QuestNPC7 = "Frost Rogue",
+    QuestNPC8 = "Winter Warden",
+    QuestNPC9 = "Sorcerer",
+    QuestNPC10 = "Panda Boss",
+    QuestNPC11 = "Hollow",
+    QuestNPC12 = "Strong Sorcerer",
+    QuestNPC13 = "Curse Hunter",
+    QuestNPC14 = "Slime Warrior",
+    QuestNPC15 = "Academy Teacher",
+    QuestNPC16 = "Swordsman",
+    QuestNPC17 = "Quincy",
+    QuestNPC18 = "Ninja",
+    QuestNPC19 = "Arena Fighter"
+}
+
+local function GetTargetMob()
+    local myLevel = GetCurrentLevel()
+    local targetName = nil
+    
+    for _, q in ipairs(QuestData) do
+        if myLevel >= q.Min and myLevel <= q.Max then
+            targetName = MobMapping[q.NPC]
+            break
+        end
+    end
+    
+    if targetName then
+        local closest = nil
+        local dist = 1000000
+        
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v.Name == targetName and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                local d = (v.HumanoidRootPart.Position - Player.Character.HumanoidRootPart.Position).Magnitude
+                if d < dist then
+                    dist = d
+                    closest = v
+                end
+            end
+        end
+        return closest
+    end
+    return nil
+end
+
+local AutoFarmEnabled = false
+task.spawn(function()
+    while task.wait() do
+        if AutoFarmEnabled and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            local target = GetTargetMob()
+            if target and target:FindFirstChild("HumanoidRootPart") then
+                -- Movement
+                Player.Character.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0)
+                
+                -- Attack
+                local rs = game:GetService("ReplicatedStorage")
+                local combat = rs:FindFirstChild("CombatSystem")
+                if combat then
+                    local remotes = combat:FindFirstChild("Remotes")
+                    if remotes then
+                        local hit = remotes:FindFirstChild("RequestHit")
+                        if hit then hit:FireServer() end
                     end
                 end
             end
