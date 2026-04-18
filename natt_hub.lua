@@ -73,16 +73,16 @@ Constants.MobMapping = {
 }
 
 Constants.BossConfig = {
-    { Name = "Jinwoo",            Container = "TimedBossSpawn_JinwooBoss_Container",           Boss = "TimedBossSpawn_JinwooBoss",           NPCFolder = "JinwooBoss" },
-    { Name = "Gojo",              Container = "TimedBossSpawn_GojoBoss_Container",             Boss = "TimedBossSpawn_GojoBoss",             NPCFolder = "GojoBoss" },
-    { Name = "Sukuna",            Container = "TimedBossSpawn_SukunaBoss_Container",           Boss = "TimedBossSpawn_SukunaBoss",           NPCFolder = "SukunaBoss" },
-    { Name = "Alucard",           Container = "TimedBossSpawn_AlucardBoss_Container",          Boss = "TimedBossSpawn_AlucardBoss",          NPCFolder = "AlucardBoss" },
-    { Name = "Aizen",             Container = "TimedBossSpawn_AizenBoss_Container",            Boss = "TimedBossSpawn_AizenBoss",            NPCFolder = "AizenBoss" },
-    { Name = "Madoka",            Container = "TimedBossSpawn_MadokaBoss_Container",           Boss = "TimedBossSpawn_MadokaBoss",           NPCFolder = "MadokaBoss" },
-    { Name = "Ragna",             Container = "TimedBossSpawn_RagnaBoss_Container",            Boss = "TimedBossSpawn_RagnaBoss",            NPCFolder = "RagnaBoss" },
-    { Name = "Strongest Shinobi", Container = "TimedBossSpawn_StrongestShinobiBoss_Container", Boss = "TimedBossSpawn_StrongestShinobiBoss", NPCFolder = "StrongestShinobiBoss" },
-    { Name = "Yamato",            Container = "TimedBossSpawn_Yamato_Container",               Boss = "TimedBossSpawn_YamatoBoss",           NPCFolder = "YamatoBoss" },
-    { Name = "Yuji",              Container = "TimedBossSpawn_YujiBoss_Container",             Boss = "TimedBossSpawn_YujiBoss",             NPCFolder = "YujiBoss" }
+    { Name = "Jinwoo",            HP = "6M",    Island = "Sailor",        Rewards = "Haki Reroll (80%), Race (50%), Trait (40%), Shadow Heart (2%), Cape (3%)", Container = "TimedBossSpawn_JinwooBoss_Container",           Boss = "TimedBossSpawn_JinwooBoss",           NPCFolder = "JinwooBoss" },
+    { Name = "Alucard",           HP = "20M",   Island = "Sailor",        Rewards = "Race (85%), Trait (80%), Soul Amulet (8%), Casull (2%), Blood Ring (2%), Coat (3%)", Container = "TimedBossSpawn_AlucardBoss_Container",          Boss = "TimedBossSpawn_AlucardBoss",          NPCFolder = "AlucardBoss" },
+    { Name = "Yuji",              HP = "3.75M", Island = "Shibuya",       Rewards = "Flash Impact (9%), Divergent Pulse (4%), Yuji Hair (5%), Title (5%)", Container = "TimedBossSpawn_YujiBoss_Container",             Boss = "TimedBossSpawn_YujiBoss",             NPCFolder = "YujiBoss" },
+    { Name = "Gojo",              HP = "4M",    Island = "Shibuya",       Rewards = "Limitless Key (30%), Void Fragment (20%), Limitless Ring (8%), Blindfold (5%)", Container = "TimedBossSpawn_GojoBoss_Container",             Boss = "TimedBossSpawn_GojoBoss",             NPCFolder = "GojoBoss" },
+    { Name = "Sukuna",            HP = "5M",    Island = "Shibuya",       Rewards = "Malevolent Key (30%), Cursed Finger (20%), Dismantle Fang (8%), Collar (4%)", Container = "TimedBossSpawn_SukunaBoss_Container",           Boss = "TimedBossSpawn_SukunaBoss",           NPCFolder = "SukunaBoss" },
+    { Name = "Aizen",             HP = "25M",   Island = "Hueco Mundo",   Rewards = "Mirage Pendant (20%), Illusion Prism (8%), Hogyoku Fragment (1.2%), Haori (2%)", Container = "TimedBossSpawn_AizenBoss_Container",            Boss = "TimedBossSpawn_AizenBoss",            NPCFolder = "AizenBoss" },
+    { Name = "Madoka",            HP = "250M",  Island = "Valentine",     Rewards = "Divine Fragment (6%), Sacred Bow (4%), Pink Gem (0.75%), Wings (1.5%)", Container = "TimedBossSpawn_MadokaBoss_Container",           Boss = "TimedBossSpawn_MadokaBoss",           NPCFolder = "MadokaBoss" },
+    { Name = "Strongest Shinobi", HP = "2B",    Island = "Ninja",         Rewards = "Void Reaver (100%), Power Remnant (5.11%), Battle Sigil (2.94%), Warlord (1.5%)", Container = "TimedBossSpawn_StrongestShinobiBoss_Container", Boss = "TimedBossSpawn_StrongestShinobiBoss", NPCFolder = "StrongestShinobiBoss" },
+    { Name = "Ragna",             HP = "Unknown", Island = "Unknown",     Rewards = "Various Drops", Container = "TimedBossSpawn_RagnaBoss_Container",            Boss = "TimedBossSpawn_RagnaBoss",            NPCFolder = "RagnaBoss" },
+    { Name = "Yamato",            HP = "Unknown", Island = "Unknown",     Rewards = "Various Drops", Container = "TimedBossSpawn_Yamato_Container",               Boss = "TimedBossSpawn_YamatoBoss",           NPCFolder = "YamatoBoss" }
 }
 
 -- [[ STATE MANAGEMENT ]]
@@ -362,7 +362,8 @@ local function CreateTabs()
 
     local BossTrackerSec = BossTab:Section({ Title = "Timed Boss Tracker", Opened = false })
     for _, boss in ipairs(Constants.BossConfig) do
-        UI.BossLabels[boss.Name] = BossTrackerSec:Paragraph({ Title = boss.Name, Desc = "Loading..." })
+        local info = string.format("[%s @ %s]\nHP: %s\nDrops: %s", boss.Name, boss.Island or "Unknown", boss.HP or "?", boss.Rewards or "Unknown")
+        UI.BossLabels[boss.Name] = BossTrackerSec:Paragraph({ Title = boss.Name, Desc = info .. "\nStatus: Loading..." })
     end
 
     -- [[ STATS TAB ]]
@@ -400,8 +401,7 @@ local function CreateTabs()
     local TeleTab = Window:Tab({ Title = "Teleport", Icon = "solar:map-point-wave-bold" })
     local TeleSec = TeleTab:Section({ Title = "World Navigation", Opened = true })
     local Locs = { "Starter", "Jungle", "Desert", "Snow", "Sailor", "Shibuya", "HallowIsland", "Boss", "Dungeon",
-        "Shijuku",
-        "Slime", "Academy", "Judgement", "Ninja", "Lawless", "Tower" }
+        "Shijuku", "Slime", "Academy", "Kadgement", "Ninja", "Lawless", "Hueco Mundo", "Valentine", "Tower" }
     TeleSec:Dropdown({
         Title = "Destination",
         Values = Locs,
@@ -439,7 +439,8 @@ local function InitSync()
         for _, config in ipairs(Constants.BossConfig) do
             local label = UI.BossLabels[config.Name]
             if label then
-                label:SetDesc(Helpers.GetBossTime(config))
+                local info = string.format("[%s @ %s]\nHP: %s\nDrops: %s", config.Name, config.Island or "Unknown", config.HP or "?", config.Rewards or "Unknown")
+                label:SetDesc(info .. "\nStatus: " .. Helpers.GetBossTime(config))
             end
         end
     end
