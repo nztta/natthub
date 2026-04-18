@@ -52,36 +52,57 @@ local StatToggles = {
 
 local UI = {} -- Global UI reference for dynamic updates
 
+-- [[ SAFETY BOOT ]]
+repeat task.wait() until game:IsLoaded()
+if not Player:FindFirstChild("PlayerGui") then
+    Player:WaitForChild("PlayerGui", 10)
+end
+
 -- [[ UI LIBRARY INITIALIZATION ]]
 local WindUI
 local library_url = "https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"
 
 local function LoadUI()
     local fetch_ok, code = pcall(function() return game:HttpGet(library_url) end)
-    if not fetch_ok then return nil, "Network Error: " .. tostring(code) end
-    
-    local loader, syntax_err = loadstring(code)
-    if not loader then return nil, "Syntax Error: " .. tostring(syntax_err) end
-    
+    if not fetch_ok then return nil, "Network Error" end
+    local loader = loadstring(code)
+    if not loader then return nil, "Syntax Error" end
     local run_ok, result = pcall(loader)
-    if not run_ok then return nil, "Runtime Error: " .. tostring(result) end
-    
+    if not run_ok then return nil, "Runtime Error" end
     return result
 end
 
-local hub, err = LoadUI()
+local hub = LoadUI()
+if not hub then
+    warn("[NattHUB] Library failed to load. Retrying in 2s...")
+    task.wait(2)
+    hub = LoadUI()
+end
+
 if hub then
     WindUI = hub
 else
-    warn("[NattHUB Critical] " .. tostring(err))
+    Player:Kick("NattHUB: UI Library Connection Failed.")
     return
 end
 
-local Window = WindUI:CreateWindow({
-    Title = Constants.Config.Title,
-    Author = Constants.Config.Author,
-    Theme = "Dark"
-})
+local Window
+local success, err = pcall(function()
+    Window = WindUI:CreateWindow({
+        Title = Constants.Config.Title,
+        Author = Constants.Config.Author,
+        Theme = "Dark"
+    })
+end)
+
+if not success or not Window then
+    warn("[NattHUB Critical] Window Creation Failed: " .. tostring(err))
+    -- Fallback: Try even simpler creation
+    Window = WindUI:CreateWindow({
+        Title = "NattHUB (Safe Mode)",
+        Author = "By Nattachai"
+    })
+end
 
 -- [[ HOME TAB ]]
 local HomeTab = Window:Tab({ Title = "Home", Icon = "solar:home-2-bold" })
