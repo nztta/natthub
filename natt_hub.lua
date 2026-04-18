@@ -134,25 +134,32 @@ function Helpers.To(targetCFrame, stayStill)
         local hrp = Player.Character.HumanoidRootPart
         local dist = (targetCFrame.Position - hrp.Position).Magnitude
 
+        -- 1. Anti-Fall Optimization: Lock before anything else if we are farming
+        if State.AutoFarmEnabled or State.AutoBossEnabled then
+            if stayStill then
+                hrp.Anchored = true
+            end
+        end
+
         warn(string.format("[NattHUB Debug] Moving: Dist %.1f | stayStill: %s", dist, tostring(stayStill)))
 
-        -- Stability Optimization: If already at target, skip unanchoring to prevent jitter
         if dist < 3 then
+            -- Snap CFrame smoothly to prevent micro-adjustments
             if stayStill and (State.AutoFarmEnabled or State.AutoBossEnabled) then
+                hrp.CFrame = targetCFrame
                 hrp.Anchored = true
             end
             return
         end
 
-        hrp.Anchored = false
         if dist > 30 then
             warn("[NattHUB Debug] Distance > 30: Starting Tween Movement")
+            -- We do NOT unanchor! Keep anchoring TRUE to float smoothly through the air with TweenService
             local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear),
                 { CFrame = targetCFrame })
             tween:Play()
             task.wait(dist / 250)
 
-            -- Check if we should still be anchored/staying still
             if not (State.AutoFarmEnabled or State.AutoBossEnabled) then
                 warn("[NattHUB Debug] Automation Stopped during movement. Cancelling Anchor.")
                 hrp.Anchored = false
@@ -714,7 +721,7 @@ local function InitAutomation()
                         if npc and npc:FindFirstChild("HumanoidRootPart") and (tick() - State.LastQuestClaimed > 5) then
                             warn("[NattHUB Debug] Approaching NPC to accept quest...")
                             if UI.StatusLabel then UI.StatusLabel:SetDesc("Accepting Quest: " .. npc.Name) end
-                            Helpers.To(npc.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0), true)
+                            Helpers.To(npc.HumanoidRootPart.CFrame * CFrame.new(0, 7, 0), true)
                             task.wait(0.5)
                             warn("[NattHUB Debug] Firing QuestAccept Server Event")
                             pcall(function()
@@ -730,7 +737,7 @@ local function InitAutomation()
                         if target and target:FindFirstChild("HumanoidRootPart") then
                             warn("[NattHUB Debug] Target Found: " .. target.Name)
                             if UI.StatusLabel then UI.StatusLabel:SetDesc("Farming: " .. target.Name) end
-                            Helpers.To(target.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0), true)
+                            Helpers.To(target.HumanoidRootPart.CFrame * CFrame.new(0, 7, 0), true)
 
                             warn("[NattHUB Debug] Firing Combat RequestHit")
                             local hit = ReplicatedStorage:FindFirstChild("CombatSystem") and
