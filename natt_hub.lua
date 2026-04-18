@@ -9,6 +9,7 @@ local BASE_URL = "https://raw.githubusercontent.com/nztta/natthub/main/"
 local DEV_MODE = false -- Set to true for local testing if needed
 
 local function GetSource(path)
+    local load = (loadstring or load)
     local url = BASE_URL .. path .. "?t=" .. tick()
     local success, result = pcall(function()
         return game:HttpGet(url)
