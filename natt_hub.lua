@@ -211,6 +211,42 @@ function Helpers.UnlockCharacter()
     end
 end
 
+function Helpers.GetHealthFromUI()
+    local success, result_current, result_max = pcall(function()
+        local playerGui = Player:FindFirstChild("PlayerGui")
+        if not playerGui then return 0, 100 end
+
+        local ui = playerGui:FindFirstChild("BasicStatsCurrencyAndButtonsUI")
+        local holder = ui and ui:FindFirstChild("MainFrame")
+            and ui.MainFrame:FindFirstChild("HPAndXPBars")
+            and ui.MainFrame.HPAndXPBars:FindFirstChild("HealthBar")
+            and ui.MainFrame.HPAndXPBars.HealthBar:FindFirstChild("LoaderFrame")
+            and ui.MainFrame.HPAndXPBars.HealthBar.LoaderFrame:FindFirstChild("LoaderHolder")
+            and ui.MainFrame.HPAndXPBars.HealthBar.LoaderFrame.LoaderHolder:FindFirstChild("Stat")
+            and ui.MainFrame.HPAndXPBars.HealthBar.LoaderFrame.LoaderHolder.Stat:FindFirstChild("AutoSizeHolder")
+
+        if holder then
+            local amountObj = holder:FindFirstChild("Amount")
+            local capacityObj = holder:FindFirstChild("FullCapacity")
+            if amountObj and capacityObj then
+                local current = tonumber(amountObj.Text:gsub("[^%d%.]", "")) or 0
+                local max = tonumber(capacityObj.Text:gsub("[^%d%.]", "")) or 100
+                return current, max
+            end
+        end
+
+        -- Fallback to Humanoid
+        if Player.Character and Player.Character:FindFirstChild("Humanoid") then
+            return Player.Character.Humanoid.Health, Player.Character.Humanoid.MaxHealth
+        end
+        return 0, 100
+    end)
+    if success then
+        return result_current, result_max
+    end
+    return 0, 100
+end
+
 function Helpers.IsBossAlive(bossName)
     local config = nil
     for _, b in ipairs(Constants.BossConfig) do
@@ -427,8 +463,8 @@ local function CreateTabs()
     UI.PointsLabel = PlayerSec:Paragraph({ Title = "Stat Points", Desc = "0 Available" })
 
     local DashboardSec = HomeTab:Section({ Title = "Engine Status", Opened = true })
-    UI.StatusLabel = DashboardSec:Paragraph({ Title = "Bot Status", Desc = State.BotStatus })
-    UI.PopLabel = DashboardSec:Paragraph({ Title = "Players on Server", Desc = "Calculating..." })
+    UI.StatusLabel = DashboardSec:Paragraph({ Title = "Bot Status", Desc = "Ready" })
+    UI.PopLabel = DashboardSec:Paragraph({ Title = "Player on Server", Desc = #Players:GetPlayers() .. " / " .. Players.MaxPlayers })
 
     HomeTab:Button({
         Title = "Join Discord",
@@ -544,6 +580,7 @@ local function CreateTabs()
     local StatSec = StatsTab:Section({ Title = "Attributes", Opened = true })
     StatSec:Input({
         Title = "Points Per Cycle",
+        Placeholder = "Amount...",
         Callback = function(v)
             local n = tonumber(v)
             if n then State.AllocateAmount = n < 1 and 1 or n end
@@ -619,6 +656,9 @@ local function InitSync()
             end
         end
     end
+
+    -- Trigger initial sync immediately
+    pcall(SyncUI)
 
     task.spawn(function()
         while task.wait(2) do
@@ -726,15 +766,16 @@ local function InitAutomation()
         while task.wait(0.5) do
             local success, err = pcall(function()
                 -- Health Safety Logic
-                if State.AutoHealthSafety and Player.Character and Player.Character:FindFirstChild("Humanoid") then
-                    local hum = Player.Character.Humanoid
-                    if hum.Health / hum.MaxHealth < 0.2 then State.IsHealing = true end
-                    if hum.Health >= hum.MaxHealth then State.IsHealing = false end
+                if State.AutoHealthSafety and Player.Character then
+                    local currHealth, maxHealth = Helpers.GetHealthFromUI()
+                    local healthRatio = currHealth / maxHealth
+
+                    if healthRatio < 0.2 then State.IsHealing = true end
+                    if healthRatio >= 0.95 then State.IsHealing = false end
 
                     if State.IsHealing then
                         if UI.StatusLabel then
-                            UI.StatusLabel:SetDesc(string.format("Healing (%.1f%%)...", (hum.Health / hum.MaxHealth) *
-                                100))
+                            UI.StatusLabel:SetDesc(string.format("Healing (%.1f%%)...", healthRatio * 100))
                         end
 
                         -- Find ANY target to float above for safety
@@ -1042,6 +1083,12 @@ Loader.Run(function()
     UIManager.Init()
     CreateTabs()
     UIManager.CreateToggle()
+    
+    -- Explicitly select Home tab on startup
+    if Window.SelectTab then
+        Window:SelectTab("Home")
+    end
+
     InitSync()
     InitAutomation()
 
