@@ -12,10 +12,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
--- [[ CONFIGURATION ]]
+local VERSION = "3.5.2"
 local Config = {
-    Version = "3.5.1",
-    Title = "NattHUB | Sailor Piece " .. Version,
+    Version = VERSION,
+    Title = "NattHUB | Sailor Piece " .. VERSION,
     Icon = "solar:planet-3-bold-duotone",
     LogoID = "rbxassetid://117953684635635",
     Folder = "NattHUB_Configs",
@@ -192,8 +192,14 @@ local function GetQuestNPC()
     local myLevel = GetCurrentLevel()
     for _, q in ipairs(QuestData) do
         if myLevel >= q.Min and myLevel <= q.Max then
-            local npcContainer = workspace:FindFirstChild("ServiceNPCs")
-            return npcContainer and npcContainer:FindFirstChild(q.NPC)
+            -- Try common NPC containers
+            local containers = { workspace:FindFirstChild("ServiceNPCs"), workspace:FindFirstChild("NPCs"), workspace }
+            for _, container in ipairs(containers) do
+                if container then
+                    local npc = container:FindFirstChild(q.NPC)
+                    if npc then return npc end
+                end
+            end
         end
     end
     return nil
@@ -417,6 +423,8 @@ task.spawn(function()
                 -- Quest Cooldown (5 Seconds)
                 if npc and npc:FindFirstChild("HumanoidRootPart") and (tick() - LastQuestClaimed > 5) then
                     UpdateStatus("Accepting Quest: " .. npc.Name)
+                    To(npc.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0))
+                    task.wait(0.5)
                     pcall(function()
                         ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(npc)
                     end)
@@ -428,8 +436,7 @@ task.spawn(function()
                     UpdateStatus("Farming: " .. target.Name)
                     To(target.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0))
                     local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
-                    local hit = combat and combat:FindFirstChild("Remotes") and
-                    combat.Remotes:FindFirstChild("RequestHit")
+                    local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
                     if hit then pcall(function() hit:FireServer() end) end
                 else
                     UpdateStatus("Scanning Targets...")
