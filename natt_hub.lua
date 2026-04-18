@@ -115,7 +115,21 @@ local WindUI, Window
 local Helpers = {}
 
 function Helpers.GetPlayerData(key)
-    local folders = { "Data", "leaderstats", "Stats", "PlayerData", "Values", "Account", "PlayerStats", "StatsFolder" }
+    -- Priorities based on confirmed game structure
+    local data = Player:FindFirstChild("Data")
+    if data then
+        local val = data:FindFirstChild(key)
+        if val then return val.Value end
+    end
+    
+    local ls = Player:FindFirstChild("leaderstats")
+    if ls then
+        local val = ls:FindFirstChild(key)
+        if val then return val.Value end
+    end
+
+    -- Fallback search for other possible containers
+    local folders = { "Stats", "PlayerData", "Values", "Account", "PlayerStats", "StatsFolder" }
     for _, folderName in ipairs(folders) do
         local folder = Player:FindFirstChild(folderName)
         if folder then
@@ -628,7 +642,8 @@ local function CreateTabs()
         Title = "Rejoin Server",
         Desc = "Quickly rejoin the current server instance.",
         Callback = function()
-            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
+            local ts = game:GetService("TeleportService")
+            ts:Teleport(game.PlaceId, Player)
         end,
     })
 end
