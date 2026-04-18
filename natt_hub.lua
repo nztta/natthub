@@ -17,7 +17,7 @@ local Config = {
     Title = "NattHUB | Sailor Piece",
     Icon = "solar:planet-3-bold-duotone",
     LogoID = "rbxassetid://117953684635635",
-    Version = "2.9.0",
+    Version = "3.0.0",
     Folder = "NattHUB_Configs",
     Author = "by Natt Dev"
 }
@@ -77,15 +77,28 @@ local BotStatus = "Ready"
 -- [[ UI ELEMENTS ]]
 local StatusLabel = nil
 local PopLabel = nil
+local LevelLabel = nil
+local MoneyLabel = nil
+local BountyLabel = nil
 
 -- [[ HELPERS ]]
-local function GetCurrentLevel()
-    local stats = Player:FindFirstChild("leaderstats") or Player:FindFirstChild("stats")
-    if stats then
-        local lv = stats:FindFirstChild("Level") or stats:FindFirstChild("level")
-        return lv and lv.Value or 0
+local function GetPlayerData(key)
+    local data = Player:FindFirstChild("Data")
+    if data then
+        local val = data:FindFirstChild(key)
+        return val and val.Value or 0
+    end
+    -- Fallback to leaderstats for items like Bounty
+    local ls = Player:FindFirstChild("leaderstats")
+    if ls then
+        local val = ls:FindFirstChild(key)
+        return val and val.Value or 0
     end
     return 0
+end
+
+local function GetCurrentLevel()
+    return GetPlayerData("Level")
 end
 
 local function UpdateStatus(text)
@@ -119,7 +132,7 @@ local function GetTargetMob()
     if targetData then
         local npcContainer = workspace:FindFirstChild("NPCs")
         if not npcContainer then return nil end
-        local closest, dist = nil, 5000 -- Max 5000 distance
+        local closest, dist = nil, 5000
         local targets = type(targetData) == "table" and targetData or { targetData }
         for _, name in ipairs(targets) do
             local v = npcContainer:FindFirstChild(name)
@@ -137,7 +150,7 @@ end
 local function RunLoader(windowObj)
     local LoaderGui = Instance.new("ScreenGui", PlayerGui)
     LoaderGui.Name = "NattHUB_Loader"
-    LoaderGui.DisplayOrder = 10000 -- Ensure it's above everything
+    LoaderGui.DisplayOrder = 10000
     
     local LoaderFrame = Instance.new("Frame", LoaderGui)
     LoaderFrame.BackgroundColor3 = Color3.fromRGB(3, 3, 5)
@@ -170,7 +183,7 @@ local function RunLoader(windowObj)
     drift:Play()
     TweenService:Create(Blur, TweenInfo.new(0.5), { Size = 24 }):Play()
 
-    local steps = { "Initializing Assets...", "Loading NattHUB...", "Welcome!" }
+    local steps = { "Initializing Assets...", "Syncing Player Data...", "Welcome!" }
     for i, s in ipairs(steps) do
         StatusTxt.Text = s
         TweenService:Create(Logo, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Rotation = i * 360 }):Play()
@@ -202,15 +215,21 @@ local Window = WindUI:CreateWindow({
     Transparent = true,
     SideBarSize = 200
 })
-if Window.Instance then Window.Instance.Enabled = false end -- Force hide immediately
+if Window.Instance then Window.Instance.Enabled = false end
 
 -- [[ TABS ]]
 local HomeTab = Window:Tab({ Title = "Home", Icon = "solar:home-2-bold" })
-local HomeMain = HomeTab:Section({ Title = "Dashboard", Opened = true })
-StatusLabel = HomeMain:Paragraph({ Title = "Bot Status", Desc = BotStatus })
-PopLabel = HomeMain:Paragraph({ Title = "Players on Server", Desc = "Calculating..." })
 
-HomeMain:Button({
+local PlayerSec = HomeTab:Section({ Title = "Player Information", Opened = true })
+LevelLabel = PlayerSec:Paragraph({ Title = "Level", Desc = "Lv. 0 (0 EXP)" })
+MoneyLabel = PlayerSec:Paragraph({ Title = "Currency", Desc = "0 Money | 0 Gems" })
+BountyLabel = PlayerSec:Paragraph({ Title = "Bounty", Desc = "0 Bounty" })
+
+local DashboardSec = HomeTab:Section({ Title = "Engine Status", Opened = true })
+StatusLabel = DashboardSec:Paragraph({ Title = "Bot Status", Desc = BotStatus })
+PopLabel = DashboardSec:Paragraph({ Title = "Players on Server", Desc = "Calculating..." })
+
+HomeTab:Button({
     Title = "Join Discord",
     Desc = "discord.gg/natthub",
     Callback = function() 
@@ -223,7 +242,7 @@ local MainTab = Window:Tab({ Title = "Main", Icon = "solar:star-bold" })
 local MainFarm = MainTab:Section({ Title = "Automation", HideButton = true })
 MainFarm:Toggle({
     Title = "Auto Farm Level",
-    Desc = "Level up naturally with automated quests",
+    Desc = "Automated Questing & Mob Farming",
     Value = false,
     Callback = function(v) AutoFarmEnabled = v; UpdateStatus(v and "Farming..." or "Ready") end
 })
@@ -264,21 +283,16 @@ TeleSec:Dropdown({
 })
 
 -- [[ LOOPS ]]
--- Unified Auto Farm (Quests + Mobs)
+-- Unified Auto Farm
 task.spawn(function()
-    while task.wait() do
+    while task.wait(0.5) do
         if AutoFarmEnabled and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-            -- 1. Check if we need to accept a quest
             local npc = GetQuestNPC()
             if npc and npc:FindFirstChild("HumanoidRootPart") then
-                -- Logic: Accept quest if we don't have one or if we are far from current quest target
-                -- For simplicity, we check for a quest in PlayerGui or through a remote flag.
-                -- Most Sailor Piece scripts just spam accept while farming.
-                UpdateStatus("Refreshing Quest: " .. npc.Name)
+                UpdateStatus("Accepting Quest: " .. npc.Name)
                 ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(npc)
             end
 
-            -- 2. Target Mobs
             local target = GetTargetMob()
             if target and target:FindFirstChild("HumanoidRootPart") then
                 UpdateStatus("Farming: " .. target.Name)
@@ -288,7 +302,7 @@ task.spawn(function()
                 local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
                 if hit then hit:FireServer() end
             else
-                UpdateStatus("Scanning for Targets...")
+                UpdateStatus("Scanning Targets...")
             end
         end
     end
@@ -305,24 +319,35 @@ task.spawn(function()
     end
 end)
 
--- [[ FINALIZATION ]]
-local function SyncPop()
+-- UI Sync Loop
+local function SyncUI()
     if PopLabel then
         PopLabel:Set({ Title = "Players on Server", Desc = #Players:GetPlayers() .. " / " .. Players.MaxPlayers })
     end
+    if LevelLabel then
+        local lv = GetPlayerData("Level")
+        local exp = GetPlayerData("Experience")
+        LevelLabel:Set({ Title = "Level", Desc = "Lv. " .. lv .. " (" .. exp .. " EXP)" })
+    end
+    if MoneyLabel then
+        local money = GetPlayerData("Money")
+        local gems = GetPlayerData("Gems")
+        MoneyLabel:Set({ Title = "Currency", Desc = money .. " Money | " .. gems .. " Gems" })
+    end
+    if BountyLabel then
+        local bounty = GetPlayerData("Bounty")
+        BountyLabel:Set({ Title = "Bounty", Desc = bounty .. " Bounty" })
+    end
 end
-Players.PlayerAdded:Connect(SyncPop)
-Players.PlayerRemoving:Connect(SyncPop)
 
--- Initial Sync
+-- Finalization
 task.spawn(function()
-    task.wait(1)
-    SyncPop()
-    UpdateStatus("Ready")
-    HomeTab:Select() -- Ensure Home is open
+    while task.wait(2) do
+        SyncUI()
+    end
 end)
 
--- Start Loader
+HomeTab:Select()
 task.spawn(RunLoader, Window)
 
-print("NattHUB | v2.9.0 Initialized")
+print("NattHUB | v3.0.0 Global Release")
