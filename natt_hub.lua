@@ -1,319 +1,134 @@
 -- [[ NattHUB | Sailor Piece ]]
--- Powered by WindUI Library
+-- Optimized & De-Duplicated Architecture
 -- Created by Antigravity (Google DeepMind)
+
+---@diagnostic disable: undefined-global
+---@diagnostic disable: deprecated
+
+
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
 -- [[ CONFIGURATION ]]
 local Config = {
     Title = "NattHUB | Sailor Piece",
-    Icon = "solar:cat-bold",
+    Icon = "solar:planet-3-bold-duotone",
     LogoID = "rbxassetid://117953684635635",
-    Version = "2.6.2",
+    Version = "2.8.0",
+    Folder = "NattHUB_Configs",
+    Author = "by Natt Dev"
 }
 
--- [[ LOADING ANIMATION SYSTEM ]]
-local LoaderGui = Instance.new("ScreenGui")
-LoaderGui.Name = "NattHUB_Loader"
-LoaderGui.Parent = PlayerGui
-LoaderGui.DisplayOrder = 9999 -- Ensure it's above everything
-LoaderGui.ResetOnSpawn = false
-
-local LoaderFrame = Instance.new("Frame")
-LoaderFrame.Name = "Loader"
-LoaderFrame.Parent = LoaderGui
-LoaderFrame.BackgroundColor3 = Color3.fromRGB(3, 3, 5)
-LoaderFrame.Size = UDim2.fromScale(1, 1)
-
-local LoaderLogo = Instance.new("ImageLabel")
-LoaderLogo.Name = "Logo"
-LoaderLogo.Parent = LoaderFrame
-LoaderLogo.BackgroundTransparency = 1
-LoaderLogo.AnchorPoint = Vector2.new(0.5, 0.5)
-LoaderLogo.Position = UDim2.fromScale(0.5, 0.5)
-LoaderLogo.Size = UDim2.fromOffset(140, 140)
-LoaderLogo.Image = Config.LogoID
-
-local LoaderText = Instance.new("TextLabel")
-LoaderText.Name = "Status"
-LoaderText.Parent = LoaderFrame
-LoaderText.BackgroundTransparency = 1
-LoaderText.Position = UDim2.new(0.5, 0, 0.5, 100)
-LoaderText.AnchorPoint = Vector2.new(0.5, 0)
-LoaderText.Size = UDim2.new(0, 300, 0, 30)
-LoaderText.Font = Enum.Font.GothamMedium
-LoaderText.Text = "Initializing NattHUB..."
-LoaderText.TextColor3 = Color3.fromRGB(230, 230, 230)
-LoaderText.TextSize = 14
-LoaderText.TextTransparency = 0.5
-
--- [[ BLUR SYSTEM ]]
-local Blur = Instance.new("BlurEffect")
-Blur.Parent = Lighting
-Blur.Size = 0
-
-local function RunLoader(windowObj)
-    -- Start Drift Animation (Concurrent)
-    local driftInfo = TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
-    local driftTween = TweenService:Create(LoaderLogo, driftInfo, {
-        Position = UDim2.fromScale(0.51, 0.51),
-        Size = UDim2.fromOffset(150, 150)
-    })
-    driftTween:Play()
-
-    -- Apply Blur
-    TweenService:Create(Blur, TweenInfo.new(0.5), {Size = 24}):Play()
-
-    -- Run Split Spin Animation
-    local statuses = {
-        "Loading Sailor Piece Assets...",
-        "Connecting to Automation Engine...",
-        "Finalizing UI Components..."
-    }
-
-    for i = 1, 3 do
-        LoaderText.Text = statuses[i]
-        local spinInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-        local spinTween = TweenService:Create(LoaderLogo, spinInfo, {Rotation = i * 360})
-        spinTween:Play()
-        spinTween.Completed:Wait()
-        task.wait(0.75)
-    end
-
-    -- Fade Out Sequence
-    driftTween:Cancel()
-    local fadeInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-    TweenService:Create(LoaderFrame, fadeInfo, {BackgroundTransparency = 1}):Play()
-    TweenService:Create(LoaderLogo, fadeInfo, {ImageTransparency = 1}):Play()
-    TweenService:Create(LoaderText, fadeInfo, {TextTransparency = 1}):Play()
-    TweenService:Create(Blur, fadeInfo, {Size = 0}):Play()
-    
-    task.wait(0.8)
-    
-    -- Show Window after loader fades
-    if windowObj and windowObj.Instance then
-        windowObj.Instance.Enabled = true
-    end
-
-    LoaderGui:Destroy()
-    Blur:Destroy()
-end
-
--- [[ WINDUI INITIALIZATION ]]
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
-
-local Window = WindUI:CreateWindow({
-    Title = Config.Title,
-    Icon = Config.LogoID,
-    Author = "by Natt",
-    Folder = "NattHUB_Wind_Settings",
-    Size = UDim2.fromOffset(620, 500),
-    Transparent = true, 
-    Theme = "Dark",
-    ButtonsType = "Mac",
-})
-
--- Initially hide window (WindUI usually names the ScreenGui "WindUI" or matches Title)
--- We set it to Enabled = false immediately
-if Window.Instance then
-    Window.Instance.Enabled = false
-end
-
--- Spawn loader with reference to window
-task.spawn(RunLoader, Window)
-
--- [[ HOME TAB ]]
-local HomeTab = Window:Tab({ Title = "Home", Icon = "solar:home-2-bold" })
-local HomeMain = HomeTab:Section({ Title = "Dashboard" })
-HomeMain:Paragraph({
-    Title = "Welcome, " .. (Player.DisplayName or Player.Name) .. "!",
-    Desc = "NattHUB is now initialized. This premium interface is designed for maximum speed and simplicity.",
-})
-HomeMain:Button({
-    Title = "Join Discord",
-    Desc = "discord.gg/natthub",
-    Callback = function() setclipboard("https://discord.gg/natthub") end,
-})
-
--- [[ ALL OTHER TABS ]]
-local GeneralTab = Window:Tab({ Title = "General", Icon = "solar:settings-minimalistic-bold" })
-local GenSec = GeneralTab:Section({ Title = "Player Helpers" })
-GenSec:Toggle({ Title = "Auto Clicker", Value = false, Callback = function(v) end })
-GenSec:Toggle({ Title = "Infinite Stamina", Value = false, Callback = function(v) end })
-
-local MainTab = Window:Tab({ Title = "Main", Icon = "solar:star-bold" })
-local MainFarm = MainTab:Section({ Title = "Fast Farming" })
-MainFarm:Toggle({ 
-    Title = "Auto Farm Level", 
-    Desc = "Target quest-related enemies", 
-    Value = false, 
-    Callback = function(v) AutoFarmEnabled = v end 
-})
-MainFarm:Toggle({ Title = "Auto Collect Drops", Value = false, Callback = function(v) end })
-
-local BossTab = Window:Tab({ Title = "Boss Farm", Icon = "solar:shield-danger-bold" })
-local BossSec = BossTab:Section({ Title = "Legendary Encounters" })
-BossSec:Dropdown({ Title = "Select Boss", Values = {"Lord Shura", "Void King", "Ancient Dragon"}, Callback = function(v) end })
-
-local DungeonTab = Window:Tab({ Title = "Dungeon", Icon = "solar:ghost-bold" })
-local DungSec = DungeonTab:Section({ Title = "Dungeon Raiding" })
-DungSec:Toggle({ Title = "Auto Start Dungeon", Value = false, Callback = function(v) end })
-
-local StatsTab = Window:Tab({ Title = "Auto Stats", Icon = "solar:chart-square-bold" })
-local StatSec = StatsTab:Section({ Title = "Attribute Allocation" })
-StatSec:Toggle({ Title = "Auto Strength", Value = false, Callback = function(v) end })
-
-local QuestTab = Window:Tab({ Title = "Quest", Icon = "solar:notes-bold" })
-local QuestSec = QuestTab:Section({ Title = "Quest Automation" })
-QuestSec:Toggle({ 
-    Title = "Auto Quest (Level Based)", 
-    Value = false, 
-    Callback = function(v) AutoQuestEnabled = v end 
-})
-QuestSec:Toggle({ Title = "Auto Complete Quest", Value = false, Callback = function(v) end })
-
-local TeleportTab = Window:Tab({ Title = "Teleport", Icon = "solar:map-point-wave-bold" })
-local WorldSec = TeleportTab:Section({ Title = "World Navigation" })
-local Locations = {"Starter", "Jungle", "Desert", "Snow", "Sailor", "Shibuya", "HallowIsland", "Boss", "Dungeon", "Shijuku", "Slime", "Academy", "Kadgement", "Ninja", "Lawless", "Tower"}
-WorldSec:Dropdown({
-    Title = "Portal Destination",
-    Values = Locations,
-    Callback = function(v)
-        local rem = game:GetService("ReplicatedStorage"):WaitForChild("Remotes", 5)
-        if rem then
-            local t = rem:WaitForChild("TeleportToPortal", 5)
-            if t then t:FireServer(v) WindUI:Notify({ Title = "NattHUB", Content = "Teleported to " .. v }) end
-        end
-    end,
-})
-
-local MiscTab = Window:Tab({ Title = "Misc", Icon = "solar:box-bold" })
-local MiscSec = MiscTab:Section({ Title = "Utilities" })
-MiscSec:Button({ Title = "Anti-AFK", Callback = function() end })
-MiscSec:Button({ Title = "Rejoin Server", Callback = function() game:GetService("TeleportService"):Teleport(game.PlaceId, Player) end })
-
-local PlayerTab = Window:Tab({ Title = "Player", Icon = "solar:user-bold" })
-PlayerTab:Section({ Title = "Identity" }):Paragraph({ Title = "DisplayName", Desc = Player.DisplayName })
-local StatGrid = PlayerTab:Section({ Title = "Server" })
-local PopLabel = StatGrid:Paragraph({ Title = "Population", Desc = #Players:GetPlayers() .. " / " .. Players.MaxPlayers })
-
-local SettingTab = Window:Tab({ Title = "Setting Gui", Icon = "solar:palet-2-bold" })
-local UISec = SettingTab:Section({ Title = "UI Customization" })
-UISec:Button({ Title = "Reset UI Position", Callback = function() Window:ResetPosition() end })
-UISec:Toggle({ Title = "Transparent Mode", Value = true, Callback = function(v) Window:SetTransparency(v) end })
-
--- [[ QUEST DATA ]]
+-- [[ DATA MODELS ]]
 local QuestData = {
-    {Min = 0, Max = 99, NPC = "QuestNPC1"},
-    {Min = 100, Max = 249, NPC = "QuestNPC2"},
-    {Min = 250, Max = 499, NPC = "QuestNPC3"},
-    {Min = 500, Max = 749, NPC = "QuestNPC4"},
-    {Min = 750, Max = 999, NPC = "QuestNPC5"},
-    {Min = 1000, Max = 1499, NPC = "QuestNPC6"},
-    {Min = 1500, Max = 1999, NPC = "QuestNPC7"},
-    {Min = 2000, Max = 2999, NPC = "QuestNPC8"},
-    {Min = 3000, Max = 3999, NPC = "QuestNPC9"},
-    {Min = 4000, Max = 5000, NPC = "QuestNPC10"},
-    {Min = 5001, Max = 6250, NPC = "QuestNPC11"},
-    {Min = 6251, Max = 7000, NPC = "QuestNPC12"},
-    {Min = 7001, Max = 8000, NPC = "QuestNPC13"},
-    {Min = 8001, Max = 9000, NPC = "QuestNPC14"},
-    {Min = 9001, Max = 10000, NPC = "QuestNPC15"},
-    {Min = 10001, Max = 10750, NPC = "QuestNPC16"},
-    {Min = 10751, Max = 11500, NPC = "QuestNPC17"},
-    {Min = 11501, Max = 12000, NPC = "QuestNPC18"},
-    {Min = 12001, Max = 99999, NPC = "QuestNPC19"}
+    { Min = 0,     Max = 99,    NPC = "QuestNPC1" },
+    { Min = 100,   Max = 249,   NPC = "QuestNPC2" },
+    { Min = 250,   Max = 499,   NPC = "QuestNPC3" },
+    { Min = 500,   Max = 749,   NPC = "QuestNPC4" },
+    { Min = 750,   Max = 999,   NPC = "QuestNPC5" },
+    { Min = 1000,  Max = 1499,  NPC = "QuestNPC6" },
+    { Min = 1500,  Max = 1999,  NPC = "QuestNPC7" },
+    { Min = 2000,  Max = 2999,  NPC = "QuestNPC8" },
+    { Min = 3000,  Max = 3999,  NPC = "QuestNPC9" },
+    { Min = 4000,  Max = 5000,  NPC = "QuestNPC10" },
+    { Min = 5001,  Max = 6250,  NPC = "QuestNPC11" },
+    { Min = 6251,  Max = 7000,  NPC = "QuestNPC12" },
+    { Min = 7001,  Max = 8000,  NPC = "QuestNPC13" },
+    { Min = 8001,  Max = 9000,  NPC = "QuestNPC14" },
+    { Min = 9001,  Max = 10000, NPC = "QuestNPC15" },
+    { Min = 10001, Max = 10750, NPC = "QuestNPC16" },
+    { Min = 10751, Max = 11500, NPC = "QuestNPC17" },
+    { Min = 11501, Max = 12000, NPC = "QuestNPC18" },
+    { Min = 12001, Max = 99999, NPC = "QuestNPC19" }
 }
 
+local MobMapping = {
+    QuestNPC1 = { "Thief1", "Thief2", "Thief3", "Thief4", "Thief5" },
+    QuestNPC2 = "ThiefBoss",
+    QuestNPC3 = { "Monkey1", "Monkey2", "Monkey3", "Monkey4", "Monkey5" },
+    QuestNPC4 = "MonkeyBoss",
+    QuestNPC5 = { "DesertBandit1", "DesertBandit2", "DesertBandit3", "DesertBandit4", "DesertBandit5" },
+    QuestNPC6 = "DesertBoss",
+    QuestNPC7 = { "FrostRogue1", "FrostRogue2", "FrostRogue3", "FrostRogue4", "FrostRogue5" },
+    QuestNPC8 = "SnowBoss",
+    QuestNPC9 = { "Sorcerer1", "Sorcerer2", "Sorcerer3", "Sorcerer4", "Sorcerer5" },
+    QuestNPC10 = "PandaMiniBoss",
+    QuestNPC11 = { "Hollow1", "Hollow2", "Hollow3", "Hollow4", "Hollow5" },
+    QuestNPC12 = { "StrongSorcerer1", "StrongSorcerer2", "StrongSorcerer3", "StrongSorcerer4", "StrongSorcerer5" },
+    QuestNPC13 = { "Curse1", "Curse2", "Curse3", "Curse4", "Curse5" },
+    QuestNPC14 = { "Slime1", "Slime2", "Slime3", "Slime4", "Slime5" },
+    QuestNPC15 = { "AcademyTeacher1", "AcademyTeacher2", "AcademyTeacher3", "AcademyTeacher4", "AcademyTeacher5" },
+    QuestNPC16 = { "Swordsman1", "Swordsman2", "Swordsman3", "Swordsman4", "Swordsman5" },
+    QuestNPC17 = { "Quincy1", "Quincy2", "Quincy3", "Quincy4", "Quincy5" },
+    QuestNPC18 = { "Ninja1", "Ninja2", "Ninja3", "Ninja4", "Ninja5" },
+    QuestNPC19 = { "ArenaFighter1", "ArenaFighter2", "ArenaFighter3", "ArenaFighter4", "ArenaFighter5" }
+}
+
+-- [[ STATE ]]
+local AutoQuestEnabled = false
+local AutoFarmEnabled = false
+local AutoStatsEnabled = false
+local SelectedStat = "Melee"
+local AllocateAmount = 1
+local BotStatus = "Initializing..."
+
+-- [[ UI ELEMENTS ]]
+local StatusLabel = nil
+local PopLabel = nil
+
+-- [[ HELPERS ]]
 local function GetCurrentLevel()
-    local stats = Player:FindFirstChild("leaderstats")
+    local stats = Player:FindFirstChild("leaderstats") or Player:FindFirstChild("stats")
     if stats then
-        local lv = stats:FindFirstChild("Level")
-        if lv then return lv.Value end
+        local lv = stats:FindFirstChild("Level") or stats:FindFirstChild("level")
+        return lv and lv.Value or 0
     end
     return 0
 end
 
-local AutoQuestEnabled = false
-task.spawn(function()
-    while task.wait(5) do
-        if AutoQuestEnabled then
-            local myLevel = GetCurrentLevel()
-            local targetNPCName = nil
-            
-            for _, q in ipairs(QuestData) do
-                if myLevel >= q.Min and myLevel <= q.Max then
-                    targetNPCName = q.NPC
-                    break
-                end
-            end
-            
-            if targetNPCName then
-                local npc = workspace.ServiceNPCs:FindFirstChild(targetNPCName)
-                if npc then
-                    local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents")
-                    if remotes then
-                        local questAccept = remotes:FindFirstChild("QuestAccept")
-                        if questAccept then
-                            questAccept:FireServer(npc)
-                            WindUI:Notify({ Title = "Auto Quest", Content = "Accepted quest from " .. targetNPCName, Duration = 2 })
-                        end
-                    end
-                end
-            end
+local function UpdateStatus(text)
+    BotStatus = text
+    if StatusLabel then
+        StatusLabel:Set({ Title = "Bot Status", Desc = BotStatus })
+    end
+end
+
+local function GetQuestNPC()
+    local myLevel = GetCurrentLevel()
+    for _, q in ipairs(QuestData) do
+        if myLevel >= q.Min and myLevel <= q.Max then
+            local npcContainer = workspace:FindFirstChild("ServiceNPCs")
+            return npcContainer and npcContainer:FindFirstChild(q.NPC)
         end
     end
-end)
-
--- [[ FARMING DATA ]]
-local MobMapping = {
-    QuestNPC1 = "Thief",
-    QuestNPC2 = "Thief Boss",
-    QuestNPC3 = "Monkey",
-    QuestNPC4 = "Monkey Boss",
-    QuestNPC5 = "Desert Bandit",
-    QuestNPC6 = "Desert Boss",
-    QuestNPC7 = "Frost Rogue",
-    QuestNPC8 = "Winter Warden",
-    QuestNPC9 = "Sorcerer",
-    QuestNPC10 = "Panda Boss",
-    QuestNPC11 = "Hollow",
-    QuestNPC12 = "Strong Sorcerer",
-    QuestNPC13 = "Curse Hunter",
-    QuestNPC14 = "Slime Warrior",
-    QuestNPC15 = "Academy Teacher",
-    QuestNPC16 = "Swordsman",
-    QuestNPC17 = "Quincy",
-    QuestNPC18 = "Ninja",
-    QuestNPC19 = "Arena Fighter"
-}
+    return nil
+end
 
 local function GetTargetMob()
     local myLevel = GetCurrentLevel()
-    local targetName = nil
-    
+    local targetData = nil
     for _, q in ipairs(QuestData) do
         if myLevel >= q.Min and myLevel <= q.Max then
-            targetName = MobMapping[q.NPC]
+            targetData = MobMapping[q.NPC]
             break
         end
     end
-    
-    if targetName then
-        local closest = nil
-        local dist = 1000000
-        
-        for _, v in ipairs(workspace:GetChildren()) do
-            if v.Name == targetName and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+
+    if targetData then
+        local npcContainer = workspace:FindFirstChild("NPCs")
+        if not npcContainer then return nil end
+        local closest, dist = nil, 1000000
+        local targets = type(targetData) == "table" and targetData or { targetData }
+        for _, name in ipairs(targets) do
+            local v = npcContainer:FindFirstChild(name)
+            if v and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
                 local d = (v.HumanoidRootPart.Position - Player.Character.HumanoidRootPart.Position).Magnitude
-                if d < dist then
-                    dist = d
-                    closest = v
-                end
+                if d < dist then dist = d; closest = v end
             end
         end
         return closest
@@ -321,35 +136,203 @@ local function GetTargetMob()
     return nil
 end
 
-local AutoFarmEnabled = false
+-- [[ LOADING ANIMATION SYSTEM ]]
+local function RunLoader(windowObj)
+    local LoaderGui = Instance.new("ScreenGui", PlayerGui)
+    LoaderGui.Name = "NattHUB_Loader"
+    LoaderGui.DisplayOrder = 9999
+    
+    local LoaderFrame = Instance.new("Frame", LoaderGui)
+    LoaderFrame.BackgroundColor3 = Color3.fromRGB(3, 3, 5)
+    LoaderFrame.Size = UDim2.fromScale(1, 1)
+
+    local Blur = Instance.new("BlurEffect", Lighting)
+    Blur.Size = 0
+
+    local Logo = Instance.new("ImageLabel", LoaderFrame)
+    Logo.BackgroundTransparency = 1
+    Logo.AnchorPoint = Vector2.new(0.5, 0.5)
+    Logo.Position = UDim2.fromScale(0.5, 0.5)
+    Logo.Size = UDim2.fromOffset(140, 140)
+    Logo.Image = Config.LogoID
+
+    local StatusTxt = Instance.new("TextLabel", LoaderFrame)
+    StatusTxt.BackgroundTransparency = 1
+    StatusTxt.Position = UDim2.new(0.5, 0, 0.5, 100)
+    StatusTxt.AnchorPoint = Vector2.new(0.5, 0)
+    StatusTxt.Size = UDim2.new(0, 300, 0, 30)
+    StatusTxt.Font = Enum.Font.GothamMedium
+    StatusTxt.TextColor3 = Color3.fromRGB(230, 230, 230)
+    StatusTxt.TextSize = 14
+
+    -- Animation
+    local drift = TweenService:Create(Logo, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+        Position = UDim2.fromScale(0.51, 0.51),
+        Size = UDim2.fromOffset(150, 150)
+    })
+    drift:Play()
+    TweenService:Create(Blur, TweenInfo.new(0.5), { Size = 24 }):Play()
+
+    local steps = { "Initializing Assets...", "Loading Bot Logic...", "Ready!" }
+    for i, s in ipairs(steps) do
+        StatusTxt.Text = s
+        TweenService:Create(Logo, TweenInfo.new(0.25), { Rotation = i * 360 }):Play()
+        task.wait(0.8)
+    end
+
+    drift:Cancel()
+    local fade = TweenInfo.new(0.8, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    TweenService:Create(LoaderFrame, fade, { BackgroundTransparency = 1 }):Play()
+    TweenService:Create(Logo, fade, { ImageTransparency = 1 }):Play()
+    TweenService:Create(StatusTxt, fade, { TextTransparency = 1 }):Play()
+    TweenService:Create(Blur, fade, { Size = 0 }):Play()
+    task.wait(0.8)
+
+    if windowObj and windowObj.Instance then windowObj.Instance.Enabled = true end
+    LoaderGui:Destroy()
+    Blur:Destroy()
+end
+
+-- [[ WINDUI INITIALIZATION ]]
+local WindUI = (loadstring or load)(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+local Window = WindUI:CreateWindow({
+    Title = Config.Title,
+    Icon = Config.Icon,
+    Author = Config.Author,
+    Folder = Config.Folder,
+    Theme = "Mellowsi",
+    Size = UDim2.fromOffset(580, 460),
+    Transparent = true,
+    SideBarSize = 200
+})
+if Window.Instance then Window.Instance.Enabled = false end
+task.spawn(RunLoader, Window)
+
+-- [[ TABS ]]
+local HomeTab = Window:Tab({ Title = "Home", Icon = "solar:home-2-bold" })
+local HomeMain = HomeTab:Section({ Title = "Dashboard", HideButton = true })
+StatusLabel = HomeMain:Paragraph({ Title = "Bot Status", Desc = BotStatus })
+PopLabel = HomeMain:Paragraph({ Title = "Population", Desc = "Calculating..." })
+
+HomeMain:Button({
+    Title = "Join Discord",
+    Desc = "discord.gg/natthub",
+    Callback = function() 
+        local clipboard = (setclipboard or toclipboard or print)
+        clipboard("https://discord.gg/natthub") 
+    end,
+})
+
+local MainTab = Window:Tab({ Title = "Main", Icon = "solar:star-bold" })
+local MainFarm = MainTab:Section({ Title = "Automation", HideButton = true })
+MainFarm:Toggle({
+    Title = "Auto Farm Level",
+    Desc = "Farms mobs based on your level",
+    Value = false,
+    Callback = function(v) AutoFarmEnabled = v; UpdateStatus(v and "Farm Started" or "Farm Stopped") end
+})
+MainFarm:Toggle({ Title = "Auto Collect Drops", Value = false, Callback = function(v) end })
+
+local QuestTab = Window:Tab({ Title = "Quest", Icon = "solar:notes-bold" })
+local QuestSec = QuestTab:Section({ Title = "Quest Automation", HideButton = true })
+QuestSec:Toggle({ 
+    Title = "Auto Quest (Level Based)", 
+    Value = false, 
+    Callback = function(v) AutoQuestEnabled = v; UpdateStatus(v and "Quest System Active" or "Quest System Idle") end 
+})
+
+local StatsTab = Window:Tab({ Title = "Auto Stats", Icon = "solar:chart-square-bold" })
+local StatSec = StatsTab:Section({ Title = "Attributes", HideButton = true })
+StatSec:Dropdown({
+    Title = "Target Stat",
+    Values = { "Melee", "Defense", "Sword", "Power" },
+    Callback = function(v) SelectedStat = v end,
+})
+StatSec:Input({
+    Title = "Points Per Cycle",
+    Desc = "1 to 9999",
+    Callback = function(v) 
+        local n = tonumber(v) 
+        if n then AllocateAmount = n < 1 and 1 or (n > 9999 and 9999 or n) end 
+    end,
+})
+StatSec:Toggle({ Title = "Auto Allocate", Value = false, Callback = function(v) AutoStatsEnabled = v end })
+StatSec:Button({
+    Title = "Reset Stats",
+    Callback = function()
+        ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("ResetStats"):FireServer()
+        WindUI:Notify({ Title = "NattHUB", Content = "Stats Reset" })
+    end,
+})
+
+local TeleTab = Window:Tab({ Title = "Teleport", Icon = "solar:map-point-wave-bold" })
+local TeleSec = TeleTab:Section({ Title = "World Navigation" })
+local Locs = { "Starter", "Jungle", "Desert", "Snow", "Sailor", "Shibuya", "HallowIsland", "Boss", "Dungeon", "Shijuku", "Slime", "Academy", "Kadgement", "Ninja", "Lawless", "Tower" }
+TeleSec:Dropdown({
+    Title = "Destination",
+    Values = Locs,
+    Callback = function(v)
+        local rem = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("TeleportToPortal")
+        rem:FireServer(v)
+    end,
+})
+
+-- [[ BACKGROUND LOOPS ]]
+-- 1. Farm Loop
 task.spawn(function()
     while task.wait() do
         if AutoFarmEnabled and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
             local target = GetTargetMob()
             if target and target:FindFirstChild("HumanoidRootPart") then
-                -- Movement
+                UpdateStatus("Farming: " .. target.Name)
                 Player.Character.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0)
                 
-                -- Attack
-                local rs = game:GetService("ReplicatedStorage")
-                local combat = rs:FindFirstChild("CombatSystem")
-                if combat then
-                    local remotes = combat:FindFirstChild("Remotes")
-                    if remotes then
-                        local hit = remotes:FindFirstChild("RequestHit")
-                        if hit then hit:FireServer() end
-                    end
-                end
+                local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
+                local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
+                if hit then hit:FireServer() end
+            else
+                if not AutoQuestEnabled then UpdateStatus("Searching for Mobs...") end
             end
         end
     end
 end)
 
--- [[ FINALIZATION ]]
-local function UpdatePop()
-    PopLabel:Set({ Title = "Population", Desc = #Players:GetPlayers() .. " / " .. Players.MaxPlayers })
-end
-Players.PlayerAdded:Connect(UpdatePop)
-Players.PlayerRemoving:Connect(UpdatePop)
+-- 2. Quest Loop
+task.spawn(function()
+    while task.wait(5) do
+        if AutoQuestEnabled and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            local npc = GetQuestNPC()
+            if npc and npc:FindFirstChild("HumanoidRootPart") then
+                UpdateStatus("Accepting Quest: " .. npc.Name)
+                Player.Character.HumanoidRootPart.CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
+                task.wait(0.5)
+                ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(npc)
+                task.wait(1)
+                UpdateStatus("Quest Accepted | Farming...")
+            end
+        end
+    end
+end)
 
-print("NattHUB | Full Suite Initialized")
+-- 3. Stats Loop
+task.spawn(function()
+    while task.wait(0.5) do
+        if AutoStatsEnabled then
+            pcall(function()
+                ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("AllocateStat"):FireServer(SelectedStat, AllocateAmount)
+            end)
+        end
+    end
+end)
+
+-- [[ FINALIZATION ]]
+local function SyncPop()
+    if PopLabel then
+        PopLabel:Set({ Title = "Population", Desc = #Players:GetPlayers() .. " / " .. Players.MaxPlayers })
+    end
+end
+Players.PlayerAdded:Connect(SyncPop)
+Players.PlayerRemoving:Connect(SyncPop)
+SyncPop()
+
+print("NattHUB | Clean Architecture Loaded")
