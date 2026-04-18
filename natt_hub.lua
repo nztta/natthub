@@ -5,8 +5,6 @@
 ---@diagnostic disable: undefined-global
 ---@diagnostic disable: deprecated
 
-
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
@@ -19,7 +17,7 @@ local Config = {
     Title = "NattHUB | Sailor Piece",
     Icon = "solar:planet-3-bold-duotone",
     LogoID = "rbxassetid://117953684635635",
-    Version = "2.8.0",
+    Version = "2.9.0",
     Folder = "NattHUB_Configs",
     Author = "by Natt Dev"
 }
@@ -70,12 +68,11 @@ local MobMapping = {
 }
 
 -- [[ STATE ]]
-local AutoQuestEnabled = false
 local AutoFarmEnabled = false
 local AutoStatsEnabled = false
 local SelectedStat = "Melee"
 local AllocateAmount = 1
-local BotStatus = "Initializing..."
+local BotStatus = "Ready"
 
 -- [[ UI ELEMENTS ]]
 local StatusLabel = nil
@@ -122,7 +119,7 @@ local function GetTargetMob()
     if targetData then
         local npcContainer = workspace:FindFirstChild("NPCs")
         if not npcContainer then return nil end
-        local closest, dist = nil, 1000000
+        local closest, dist = nil, 5000 -- Max 5000 distance
         local targets = type(targetData) == "table" and targetData or { targetData }
         for _, name in ipairs(targets) do
             local v = npcContainer:FindFirstChild(name)
@@ -140,7 +137,7 @@ end
 local function RunLoader(windowObj)
     local LoaderGui = Instance.new("ScreenGui", PlayerGui)
     LoaderGui.Name = "NattHUB_Loader"
-    LoaderGui.DisplayOrder = 9999
+    LoaderGui.DisplayOrder = 10000 -- Ensure it's above everything
     
     local LoaderFrame = Instance.new("Frame", LoaderGui)
     LoaderFrame.BackgroundColor3 = Color3.fromRGB(3, 3, 5)
@@ -173,11 +170,11 @@ local function RunLoader(windowObj)
     drift:Play()
     TweenService:Create(Blur, TweenInfo.new(0.5), { Size = 24 }):Play()
 
-    local steps = { "Initializing Assets...", "Loading Bot Logic...", "Ready!" }
+    local steps = { "Initializing Assets...", "Loading NattHUB...", "Welcome!" }
     for i, s in ipairs(steps) do
         StatusTxt.Text = s
-        TweenService:Create(Logo, TweenInfo.new(0.25), { Rotation = i * 360 }):Play()
-        task.wait(0.8)
+        TweenService:Create(Logo, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Rotation = i * 360 }):Play()
+        task.wait(1)
     end
 
     drift:Cancel()
@@ -205,14 +202,13 @@ local Window = WindUI:CreateWindow({
     Transparent = true,
     SideBarSize = 200
 })
-if Window.Instance then Window.Instance.Enabled = false end
-task.spawn(RunLoader, Window)
+if Window.Instance then Window.Instance.Enabled = false end -- Force hide immediately
 
 -- [[ TABS ]]
 local HomeTab = Window:Tab({ Title = "Home", Icon = "solar:home-2-bold" })
-local HomeMain = HomeTab:Section({ Title = "Dashboard", HideButton = true })
+local HomeMain = HomeTab:Section({ Title = "Dashboard", Opened = true })
 StatusLabel = HomeMain:Paragraph({ Title = "Bot Status", Desc = BotStatus })
-PopLabel = HomeMain:Paragraph({ Title = "Population", Desc = "Calculating..." })
+PopLabel = HomeMain:Paragraph({ Title = "Players on Server", Desc = "Calculating..." })
 
 HomeMain:Button({
     Title = "Join Discord",
@@ -227,18 +223,9 @@ local MainTab = Window:Tab({ Title = "Main", Icon = "solar:star-bold" })
 local MainFarm = MainTab:Section({ Title = "Automation", HideButton = true })
 MainFarm:Toggle({
     Title = "Auto Farm Level",
-    Desc = "Farms mobs based on your level",
+    Desc = "Level up naturally with automated quests",
     Value = false,
-    Callback = function(v) AutoFarmEnabled = v; UpdateStatus(v and "Farm Started" or "Farm Stopped") end
-})
-MainFarm:Toggle({ Title = "Auto Collect Drops", Value = false, Callback = function(v) end })
-
-local QuestTab = Window:Tab({ Title = "Quest", Icon = "solar:notes-bold" })
-local QuestSec = QuestTab:Section({ Title = "Quest Automation", HideButton = true })
-QuestSec:Toggle({ 
-    Title = "Auto Quest (Level Based)", 
-    Value = false, 
-    Callback = function(v) AutoQuestEnabled = v; UpdateStatus(v and "Quest System Active" or "Quest System Idle") end 
+    Callback = function(v) AutoFarmEnabled = v; UpdateStatus(v and "Farming..." or "Ready") end
 })
 
 local StatsTab = Window:Tab({ Title = "Auto Stats", Icon = "solar:chart-square-bold" })
@@ -250,10 +237,9 @@ StatSec:Dropdown({
 })
 StatSec:Input({
     Title = "Points Per Cycle",
-    Desc = "1 to 9999",
     Callback = function(v) 
         local n = tonumber(v) 
-        if n then AllocateAmount = n < 1 and 1 or (n > 9999 and 9999 or n) end 
+        if n then AllocateAmount = n < 1 and 1 or n end 
     end,
 })
 StatSec:Toggle({ Title = "Auto Allocate", Value = false, Callback = function(v) AutoStatsEnabled = v end })
@@ -277,11 +263,22 @@ TeleSec:Dropdown({
     end,
 })
 
--- [[ BACKGROUND LOOPS ]]
--- 1. Farm Loop
+-- [[ LOOPS ]]
+-- Unified Auto Farm (Quests + Mobs)
 task.spawn(function()
     while task.wait() do
         if AutoFarmEnabled and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            -- 1. Check if we need to accept a quest
+            local npc = GetQuestNPC()
+            if npc and npc:FindFirstChild("HumanoidRootPart") then
+                -- Logic: Accept quest if we don't have one or if we are far from current quest target
+                -- For simplicity, we check for a quest in PlayerGui or through a remote flag.
+                -- Most Sailor Piece scripts just spam accept while farming.
+                UpdateStatus("Refreshing Quest: " .. npc.Name)
+                ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(npc)
+            end
+
+            -- 2. Target Mobs
             local target = GetTargetMob()
             if target and target:FindFirstChild("HumanoidRootPart") then
                 UpdateStatus("Farming: " .. target.Name)
@@ -291,30 +288,13 @@ task.spawn(function()
                 local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
                 if hit then hit:FireServer() end
             else
-                if not AutoQuestEnabled then UpdateStatus("Searching for Mobs...") end
+                UpdateStatus("Scanning for Targets...")
             end
         end
     end
 end)
 
--- 2. Quest Loop
-task.spawn(function()
-    while task.wait(5) do
-        if AutoQuestEnabled and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-            local npc = GetQuestNPC()
-            if npc and npc:FindFirstChild("HumanoidRootPart") then
-                UpdateStatus("Accepting Quest: " .. npc.Name)
-                Player.Character.HumanoidRootPart.CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
-                task.wait(0.5)
-                ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(npc)
-                task.wait(1)
-                UpdateStatus("Quest Accepted | Farming...")
-            end
-        end
-    end
-end)
-
--- 3. Stats Loop
+-- Stats Loop
 task.spawn(function()
     while task.wait(0.5) do
         if AutoStatsEnabled then
@@ -328,11 +308,21 @@ end)
 -- [[ FINALIZATION ]]
 local function SyncPop()
     if PopLabel then
-        PopLabel:Set({ Title = "Population", Desc = #Players:GetPlayers() .. " / " .. Players.MaxPlayers })
+        PopLabel:Set({ Title = "Players on Server", Desc = #Players:GetPlayers() .. " / " .. Players.MaxPlayers })
     end
 end
 Players.PlayerAdded:Connect(SyncPop)
 Players.PlayerRemoving:Connect(SyncPop)
-SyncPop()
 
-print("NattHUB | Clean Architecture Loaded")
+-- Initial Sync
+task.spawn(function()
+    task.wait(1)
+    SyncPop()
+    UpdateStatus("Ready")
+    HomeTab:Select() -- Ensure Home is open
+end)
+
+-- Start Loader
+task.spawn(RunLoader, Window)
+
+print("NattHUB | v2.9.0 Initialized")
