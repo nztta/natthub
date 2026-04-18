@@ -129,6 +129,8 @@ function Helpers.To(targetCFrame, stayStill)
     if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then return end
     local hrp = Player.Character.HumanoidRootPart
     local dist = (targetCFrame.Position - hrp.Position).Magnitude
+    
+    warn(string.format("[NattHUB Debug] Moving: Dist %.1f | stayStill: %s", dist, tostring(stayStill)))
 
     -- Stability Optimization: If already at target, skip unanchoring to prevent jitter
     if dist < 3 then
@@ -140,6 +142,7 @@ function Helpers.To(targetCFrame, stayStill)
 
     hrp.Anchored = false
     if dist > 30 then
+        warn("[NattHUB Debug] Distance > 30: Starting Tween Movement")
         local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear),
             { CFrame = targetCFrame })
         tween:Play()
@@ -147,6 +150,7 @@ function Helpers.To(targetCFrame, stayStill)
         
         -- Check if we should still be anchored/staying still
         if not (State.AutoFarmEnabled or State.AutoBossEnabled) then
+            warn("[NattHUB Debug] Automation Stopped during movement. Cancelling Anchor.")
             hrp.Anchored = false
             return
         end
@@ -156,6 +160,7 @@ function Helpers.To(targetCFrame, stayStill)
 
     if stayStill and (State.AutoFarmEnabled or State.AutoBossEnabled) then
         hrp.Anchored = true
+        warn("[NattHUB Debug] Target Reached. Anchored: true")
     else
         hrp.Anchored = false
     end
@@ -189,6 +194,7 @@ function Helpers.HasActiveQuest()
             hasQuest = true
         end
     end)
+    warn("[NattHUB Debug] HasActiveQuest Check: " .. tostring(hasQuest))
     return hasQuest
 end
 
@@ -617,27 +623,35 @@ local function InitAutomation()
                 end
             elseif State.AutoFarmEnabled then
                 if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                    warn("[NattHUB Debug] --- AutoFarm Loop Start ---")
                     local hasQuest = Helpers.HasActiveQuest()
                     local npc = nil
                     
                     if not hasQuest then
+                        warn("[NattHUB Debug] No active quest. Looking for Quest NPC...")
                         npc = GetQuestNPC()
                         if not npc then
+                            warn("[NattHUB Debug] No NPC found within 3000 studs. Checking Island Warp...")
                             local myLevel = Helpers.GetCurrentLevel()
                             for _, q in ipairs(Constants.QuestData) do
                                 if myLevel >= q.Min and myLevel <= q.Max then
+                                    warn("[NattHUB Debug] Warp Required -> " .. q.Island)
                                     if UI.StatusLabel then UI.StatusLabel:SetDesc("Warping to Island: " .. q.Island) end
                                     ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("TeleportToPortal"):FireServer(q.Island)
                                     task.wait(3); break
                                 end
                             end
+                        else
+                             warn("[NattHUB Debug] NPC Found: " .. npc.Name)
                         end
                     end
 
                     if npc and npc:FindFirstChild("HumanoidRootPart") and (tick() - State.LastQuestClaimed > 5) then
+                        warn("[NattHUB Debug] Approaching NPC to accept quest...")
                         if UI.StatusLabel then UI.StatusLabel:SetDesc("Accepting Quest: " .. npc.Name) end
                         Helpers.To(npc.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0), true)
                         task.wait(0.5)
+                        warn("[NattHUB Debug] Firing QuestAccept Server Event")
                         pcall(function()
                             ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept")
                                 :FireServer(npc.Name)
@@ -645,15 +659,20 @@ local function InitAutomation()
                         State.LastQuestClaimed = tick()
                     end
 
+                    warn("[NattHUB Debug] Looking for Target Mobs...")
                     local target = GetTargetMob()
                     if target and target:FindFirstChild("HumanoidRootPart") then
+                        warn("[NattHUB Debug] Target Found: " .. target.Name)
                         if UI.StatusLabel then UI.StatusLabel:SetDesc("Farming: " .. target.Name) end
                         Helpers.To(target.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0), true)
+                        
+                        warn("[NattHUB Debug] Firing Combat RequestHit")
                         local hit = ReplicatedStorage:FindFirstChild("CombatSystem") and
                             ReplicatedStorage.CombatSystem:FindFirstChild("Remotes") and
                             ReplicatedStorage.CombatSystem.Remotes:FindFirstChild("RequestHit")
                         if hit then pcall(function() hit:FireServer() end) end
                     else
+                        warn("[NattHUB Debug] No targets found in range.")
                         if UI.StatusLabel then UI.StatusLabel:SetDesc("Scanning Targets...") end
                         Player.Character.HumanoidRootPart.Anchored = false
                     end
