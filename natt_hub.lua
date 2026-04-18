@@ -115,15 +115,13 @@ local WindUI, Window
 local Helpers = {}
 
 function Helpers.GetPlayerData(key)
-    local data = Player:FindFirstChild("Data")
-    if data then
-        local val = data:FindFirstChild(key)
-        if val then return val.Value end
-    end
-    local ls = Player:FindFirstChild("leaderstats")
-    if ls then
-        local val = ls:FindFirstChild(key)
-        if val then return val.Value end
+    local folders = { "Data", "leaderstats", "Stats", "PlayerData", "Values", "Account", "PlayerStats", "StatsFolder" }
+    for _, folderName in ipairs(folders) do
+        local folder = Player:FindFirstChild(folderName)
+        if folder then
+            local val = folder:FindFirstChild(key)
+            if val then return val.Value end
+        end
     end
     return 0
 end
@@ -621,6 +619,18 @@ local function CreateTabs()
             rem:FireServer(v)
         end,
     })
+
+    -- [[ MISC TAB ]]
+    local MiscTab = Window:Tab({ Title = "Misc", Icon = "solar:settings-minimalistic-bold" })
+    local MiscSec = MiscTab:Section({ Title = "Server Utilities", Opened = true })
+
+    MiscSec:Button({
+        Title = "Rejoin Server",
+        Desc = "Quickly rejoin the current server instance.",
+        Callback = function()
+            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
+        end,
+    })
 end
 
 local function InitSync()
@@ -631,19 +641,29 @@ local function InitSync()
         if UI.LevelLabel then
             local lv = Helpers.GetPlayerData("Level")
             local exp = Helpers.GetPlayerData("Experience")
+            if exp == 0 then exp = Helpers.GetPlayerData("Exp") end
+            if exp == 0 then exp = Helpers.GetPlayerData("XP") end
             UI.LevelLabel:SetDesc("Lv. " .. lv .. " (" .. exp .. " EXP)")
         end
         if UI.MoneyLabel then
             local money = Helpers.GetPlayerData("Money")
+            if money == 0 then money = Helpers.GetPlayerData("Beli") end
+            if money == 0 then money = Helpers.GetPlayerData("Cash") end
+            if money == 0 then money = Helpers.GetPlayerData("Gold") end
+
             local gems = Helpers.GetPlayerData("Gems")
+            if gems == 0 then gems = Helpers.GetPlayerData("Diamonds") end
+
             UI.MoneyLabel:SetDesc(money .. " Money | " .. gems .. " Gems")
         end
         if UI.BountyLabel then
             local bounty = Helpers.GetPlayerData("Bounty")
+            if bounty == 0 then bounty = Helpers.GetPlayerData("Honor") end
             UI.BountyLabel:SetDesc(bounty .. " Bounty")
         end
         if UI.PointsLabel then
             local pts = Helpers.GetPlayerData("StatPoints")
+            if pts == 0 then pts = Helpers.GetPlayerData("Points") end
             UI.PointsLabel:SetDesc(pts .. " Available")
         end
         -- Boss Tracker Sync
@@ -664,6 +684,20 @@ local function InitSync()
         while task.wait(2) do
             pcall(SyncUI)
         end
+    end)
+
+    -- DEBUG: Identify possible data containers for "player data not connect" issue
+    task.spawn(function()
+        task.wait(5)
+        warn("NattHUB: Scanning player for data containers...")
+        local found = false
+        for _, child in ipairs(Player:GetChildren()) do
+            if child:IsA("Folder") or child:IsA("Configuration") then
+                print("NattHUB Data Candidate: " .. child.Name .. " (" .. child.ClassName .. ")")
+                found = true
+            end
+        end
+        if not found then warn("NattHUB: No folders found in Player object!") end
     end)
 end
 
