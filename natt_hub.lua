@@ -130,6 +130,14 @@ function Helpers.To(targetCFrame, stayStill)
     local hrp = Player.Character.HumanoidRootPart
     local dist = (targetCFrame.Position - hrp.Position).Magnitude
 
+    -- Stability Optimization: If already at target, skip unanchoring to prevent jitter
+    if dist < 3 then
+        if stayStill and (State.AutoFarmEnabled or State.AutoBossEnabled) then
+            hrp.Anchored = true
+        end
+        return
+    end
+
     hrp.Anchored = false
     if dist > 30 then
         local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear),
