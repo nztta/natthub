@@ -173,6 +173,17 @@ function Helpers.IsBossAlive(bossName)
     return false
 end
 
+function Helpers.HasActiveQuest()
+    local hasQuest = false
+    pcall(function()
+        local questUI = Player:WaitForChild("PlayerGui"):FindFirstChild("QuestUI")
+        if questUI and questUI:FindFirstChild("Quest") and questUI.Quest.Visible then
+            hasQuest = true
+        end
+    end)
+    return hasQuest
+end
+
 function Helpers.GetBossTime(config)
     -- Check Dependency
     if config.DependsOn and Helpers.IsBossAlive(config.DependsOn) then
@@ -598,16 +609,19 @@ local function InitAutomation()
                 end
             elseif State.AutoFarmEnabled then
                 if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-                    local npc = GetQuestNPC()
-
-                    if not npc then
-                        local myLevel = Helpers.GetCurrentLevel()
-                        for _, q in ipairs(Constants.QuestData) do
-                            if myLevel >= q.Min and myLevel <= q.Max then
-                                if UI.StatusLabel then UI.StatusLabel:SetDesc("Warping to Island: " .. q.Island) end
-                                ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("TeleportToPortal"):FireServer(q
-                                    .Island)
-                                task.wait(3); break
+                    local hasQuest = Helpers.HasActiveQuest()
+                    local npc = nil
+                    
+                    if not hasQuest then
+                        npc = GetQuestNPC()
+                        if not npc then
+                            local myLevel = Helpers.GetCurrentLevel()
+                            for _, q in ipairs(Constants.QuestData) do
+                                if myLevel >= q.Min and myLevel <= q.Max then
+                                    if UI.StatusLabel then UI.StatusLabel:SetDesc("Warping to Island: " .. q.Island) end
+                                    ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("TeleportToPortal"):FireServer(q.Island)
+                                    task.wait(3); break
+                                end
                             end
                         end
                     end
