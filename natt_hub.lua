@@ -115,7 +115,7 @@ local WindUI, Window
 local Helpers = {}
 
 function Helpers.GetPlayerData(key)
-    -- Priorities based on confirmed game structure
+    -- Use ONLY confirmed structure
     local data = Player:FindFirstChild("Data")
     if data then
         local val = data:FindFirstChild(key)
@@ -126,16 +126,6 @@ function Helpers.GetPlayerData(key)
     if ls then
         local val = ls:FindFirstChild(key)
         if val then return val.Value end
-    end
-
-    -- Fallback search for other possible containers
-    local folders = { "Stats", "PlayerData", "Values", "Account", "PlayerStats", "StatsFolder" }
-    for _, folderName in ipairs(folders) do
-        local folder = Player:FindFirstChild(folderName)
-        if folder then
-            local val = folder:FindFirstChild(key)
-            if val then return val.Value end
-        end
     end
     return 0
 end
@@ -682,8 +672,6 @@ local function InitSync()
         pcall(function()
             if UI.ExpLabel then
                 local exp = Helpers.GetPlayerData("Experience")
-                if exp == 0 then exp = Helpers.GetPlayerData("Exp") or 0 end
-                if exp == 0 then exp = Helpers.GetPlayerData("XP") or 0 end
                 UI.ExpLabel:SetDesc(tostring(exp))
             end
         end)
@@ -692,9 +680,6 @@ local function InitSync()
         pcall(function()
             if UI.MoneyLabel then
                 local money = Helpers.GetPlayerData("Money")
-                if money == 0 then money = Helpers.GetPlayerData("Beli") or 0 end
-                if money == 0 then money = Helpers.GetPlayerData("Cash") or 0 end
-                if money == 0 then money = Helpers.GetPlayerData("Gold") or 0 end
                 UI.MoneyLabel:SetDesc(tostring(money))
             end
         end)
@@ -703,7 +688,6 @@ local function InitSync()
         pcall(function()
             if UI.GemsLabel then
                 local gems = Helpers.GetPlayerData("Gems")
-                if gems == 0 then gems = Helpers.GetPlayerData("Diamonds") or 0 end
                 UI.GemsLabel:SetDesc(tostring(gems))
             end
         end)
@@ -712,7 +696,6 @@ local function InitSync()
         pcall(function()
             if UI.BountyLabel then
                 local bounty = Helpers.GetPlayerData("Bounty")
-                if bounty == 0 then bounty = Helpers.GetPlayerData("Honor") or 0 end
                 UI.BountyLabel:SetDesc(tostring(bounty))
             end
         end)
@@ -721,7 +704,6 @@ local function InitSync()
         pcall(function()
             if UI.PointsLabel then
                 local pts = Helpers.GetPlayerData("StatPoints")
-                if pts == 0 then pts = Helpers.GetPlayerData("Points") or 0 end
                 UI.PointsLabel:SetDesc(tostring(pts))
             end
         end)
