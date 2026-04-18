@@ -44,8 +44,8 @@ Constants.QuestData = {
     { Min = 7000,  Max = 7999,  NPC = "QuestNPC13", Island = "Shijuku" },
     { Min = 8000,  Max = 8999,  NPC = "QuestNPC14", Island = "Slime" },
     { Min = 9000,  Max = 9999,  NPC = "QuestNPC15", Island = "Academy" },
-    { Min = 10000, Max = 10749, NPC = "QuestNPC16", Island = "Kadgement" },
-    { Min = 10750, Max = 11499, NPC = "QuestNPC17", Island = "Kadgement" },
+    { Min = 10000, Max = 10749, NPC = "QuestNPC16", Island = "Judgement" },
+    { Min = 10750, Max = 11499, NPC = "QuestNPC17", Island = "Judgement" },
     { Min = 11500, Max = 11999, NPC = "QuestNPC18", Island = "Ninja" },
     { Min = 12000, Max = 99999, NPC = "QuestNPC19", Island = "Lawless" }
 }
@@ -88,12 +88,17 @@ local State = {
     AutoFarmEnabled = false,
     AutoBossEnabled = false,
     AutoStatsEnabled = false,
+    AutoSkillEnabled = false,
+    AutoWeaponEnabled = false,
+    SelectedWeapon = "None",
     SelectedBoss = "None",
-    SelectedStat = "Melee",
     AllocateAmount = 1,
     LastQuestClaimed = 0,
     BotStatus = "Ready"
 }
+local StatToggles = { Melee = false, Defense = false, Sword = false, Power = false }
+local SkillToggles = { Z = false, X = false, C = false, V = false, F = false }
+
 
 -- [[ UI REFRESH REFS ]]
 local UI = {
@@ -442,14 +447,48 @@ local function CreateTabs()
         UI.BossLabels[boss.Name] = BossTrackerSec:Paragraph({ Title = boss.Name, Desc = info .. "\nStatus: Loading..." })
     end
 
+    -- [[ COMBAT TAB ]]
+    local CombatTab = Window:Tab({ Title = "Combat", Icon = "solar:sword-bold" })
+    local WeaponSec = CombatTab:Section({ Title = "Weapon Management", Opened = true })
+    
+    local weaponDropdown = WeaponSec:Dropdown({
+        Title = "Select Weapon",
+        Values = { "None" },
+        Callback = function(v) State.SelectedWeapon = v end,
+    })
+    WeaponSec:Button({
+        Title = "Refresh Weapons",
+        Callback = function()
+            local list = { "None" }
+            for _, t in ipairs(Player.Backpack:GetChildren()) do
+                if t:IsA("Tool") then table.insert(list, t.Name) end
+            end
+            if Player.Character then
+                for _, t in ipairs(Player.Character:GetChildren()) do
+                    if t:IsA("Tool") then table.insert(list, t.Name) end
+                end
+            end
+            weaponDropdown:Refresh(list)
+            WindUI:Notify({ Title = "NattHUB", Content = "Weapons Refreshed!" })
+        end
+    })
+    WeaponSec:Toggle({
+        Title = "Auto Equip Weapon",
+        Value = State.AutoWeaponEnabled,
+        Callback = function(v) State.AutoWeaponEnabled = v end
+    })
+
+    local SkillSec = CombatTab:Section({ Title = "Auto Skills", Opened = true })
+    SkillSec:Toggle({ Title = "Auto Use Skills", Value = State.AutoSkillEnabled, Callback = function(v) State.AutoSkillEnabled = v end })
+    SkillSec:Toggle({ Title = "Use Z Skill", Value = false, Callback = function(v) SkillToggles.Z = v end })
+    SkillSec:Toggle({ Title = "Use X Skill", Value = false, Callback = function(v) SkillToggles.X = v end })
+    SkillSec:Toggle({ Title = "Use C Skill", Value = false, Callback = function(v) SkillToggles.C = v end })
+    SkillSec:Toggle({ Title = "Use V Skill", Value = false, Callback = function(v) SkillToggles.V = v end })
+    SkillSec:Toggle({ Title = "Use F Skill", Value = false, Callback = function(v) SkillToggles.F = v end })
+
     -- [[ STATS TAB ]]
     local StatsTab = Window:Tab({ Title = "Auto Stats", Icon = "solar:chart-square-bold" })
     local StatSec = StatsTab:Section({ Title = "Attributes", Opened = true })
-    StatSec:Dropdown({
-        Title = "Target Stat",
-        Values = { "Melee", "Defense", "Sword", "Power" },
-        Callback = function(v) State.SelectedStat = v end,
-    })
     StatSec:Input({
         Title = "Points Per Cycle",
         Callback = function(v)
@@ -457,14 +496,13 @@ local function CreateTabs()
             if n then State.AllocateAmount = n < 1 and 1 or n end
         end,
     })
-    StatSec:Toggle({
-        Title = "Auto Allocate",
-        Value = State.AutoStatsEnabled,
-        Callback = function(v)
-            State.AutoStatsEnabled =
-                v
-        end
-    })
+    StatSec:Toggle({ Title = "Auto Allocate", Value = State.AutoStatsEnabled, Callback = function(v) State.AutoStatsEnabled = v end })
+    StatSec:Paragraph({ Title = "Select Targets", Desc = "Enable multiple stats to allocate equally." })
+    StatSec:Toggle({ Title = "Melee", Value = false, Callback = function(v) StatToggles.Melee = v end })
+    StatSec:Toggle({ Title = "Defense", Value = false, Callback = function(v) StatToggles.Defense = v end })
+    StatSec:Toggle({ Title = "Sword", Value = false, Callback = function(v) StatToggles.Sword = v end })
+    StatSec:Toggle({ Title = "Power", Value = false, Callback = function(v) StatToggles.Power = v end })
+    
     StatSec:Button({
         Title = "Reset Stats",
         Callback = function()
@@ -477,7 +515,7 @@ local function CreateTabs()
     local TeleTab = Window:Tab({ Title = "Teleport", Icon = "solar:map-point-wave-bold" })
     local TeleSec = TeleTab:Section({ Title = "World Navigation", Opened = true })
     local Locs = { "Starter", "Jungle", "Desert", "Snow", "Sailor", "Shibuya", "HallowIsland", "Boss", "Dungeon",
-        "Shijuku", "Slime", "Academy", "Kadgement", "Ninja", "Lawless", "Hueco Mundo", "Valentine", "Tower" }
+        "Shijuku", "Slime", "Academy", "Judgement", "Ninja", "Lawless", "Hueco Mundo", "Valentine", "Tower" }
     TeleSec:Dropdown({
         Title = "Destination",
         Values = Locs,
@@ -656,15 +694,16 @@ local function InitAutomation()
                                     if myLevel >= q.Min and myLevel <= q.Max then
                                         warn("[NattHUB Debug] Warp Required -> " .. q.Island)
                                         if UI.StatusLabel then UI.StatusLabel:SetDesc("Warping to Island: " .. q.Island) end
-                                        
+
                                         local remotesFolder = ReplicatedStorage:WaitForChild("Remotes", 5)
-                                        local warpRemote = remotesFolder and remotesFolder:WaitForChild("TeleportToPortal", 5)
-                                        if warpRemote then 
-                                            pcall(function() warpRemote:FireServer(q.Island) end) 
+                                        local warpRemote = remotesFolder and
+                                        remotesFolder:WaitForChild("TeleportToPortal", 5)
+                                        if warpRemote then
+                                            pcall(function() warpRemote:FireServer(q.Island) end)
                                         else
                                             warn("[NattHUB Error] Could not find TeleportToPortal Remote!")
                                         end
-                                        
+
                                         task.wait(4); break
                                     end
                                 end
@@ -680,7 +719,8 @@ local function InitAutomation()
                             task.wait(0.5)
                             warn("[NattHUB Debug] Firing QuestAccept Server Event")
                             pcall(function()
-                                local qRemote = ReplicatedStorage:FindFirstChild("RemoteEvents") and ReplicatedStorage.RemoteEvents:FindFirstChild("QuestAccept")
+                                local qRemote = ReplicatedStorage:FindFirstChild("RemoteEvents") and
+                                ReplicatedStorage.RemoteEvents:FindFirstChild("QuestAccept")
                                 if qRemote then qRemote:FireServer(npc.Name) end
                             end)
                             State.LastQuestClaimed = tick()
@@ -719,15 +759,56 @@ local function InitAutomation()
         while task.wait(0.5) do
             local success, err = pcall(function()
                 if State.AutoStatsEnabled then
-                    local event = ReplicatedStorage:FindFirstChild("RemoteEvents") and ReplicatedStorage.RemoteEvents:FindFirstChild("AllocateStat")
+                    local event = ReplicatedStorage:FindFirstChild("RemoteEvents") and
+                    ReplicatedStorage.RemoteEvents:FindFirstChild("AllocateStat")
                     if event then
-                        event:FireServer(State.SelectedStat, State.AllocateAmount)
+                        local activeStats = {}
+                        if StatToggles.Melee then table.insert(activeStats, "Melee") end
+                        if StatToggles.Defense then table.insert(activeStats, "Defense") end
+                        if StatToggles.Sword then table.insert(activeStats, "Sword") end
+                        if StatToggles.Power then table.insert(activeStats, "Power") end
+                        
+                        for _, statName in ipairs(activeStats) do
+                            event:FireServer(statName, State.AllocateAmount)
+                        end
                     end
                 end
             end)
             if not success then
                 warn("[NattHUB Error] Stats Loop Prevented Crash: " .. tostring(err))
             end
+        end
+    end)
+
+    -- Combat Loop (Weapon & Skills)
+    task.spawn(function()
+        while task.wait(0.2) do
+            pcall(function()
+                if not Player.Character then return end
+                
+                -- Auto Equip Weapon
+                if State.AutoWeaponEnabled and State.SelectedWeapon ~= "None" then
+                    local tool = Player.Backpack:FindFirstChild(State.SelectedWeapon)
+                    if tool and tool:IsA("Tool") then
+                        Player.Character.Humanoid:EquipTool(tool)
+                    end
+                end
+                
+                -- Auto Skills (ONLY IF Farming OR Bossing)
+                if State.AutoSkillEnabled and (State.AutoFarmEnabled or State.AutoBossEnabled) then
+                    local abilitySystem = ReplicatedStorage:FindFirstChild("AbilitySystem")
+                    local remotes = abilitySystem and abilitySystem:FindFirstChild("Remotes")
+                    local reqAbility = remotes and remotes:FindFirstChild("RequestAbility")
+                    
+                    if reqAbility then
+                        if SkillToggles.Z then reqAbility:FireServer(1) end
+                        if SkillToggles.X then reqAbility:FireServer(2) end
+                        if SkillToggles.C then reqAbility:FireServer(3) end
+                        if SkillToggles.V then reqAbility:FireServer(4) end
+                        if SkillToggles.F then reqAbility:FireServer(5) end
+                    end
+                end
+            end)
         end
     end)
 end
