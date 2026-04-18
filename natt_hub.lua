@@ -17,7 +17,7 @@ local Config = {
     Title = "NattHUB | Sailor Piece",
     Icon = "solar:planet-3-bold-duotone",
     LogoID = "rbxassetid://117953684635635",
-    Version = "3.1.0",
+    Version = "3.2.0",
     Folder = "NattHUB_Configs",
     Author = "by Natt Dev"
 }
@@ -61,7 +61,7 @@ local MobMapping = {
     QuestNPC13 = { "Curse1", "Curse2", "Curse3", "Curse4", "Curse5" },
     QuestNPC14 = { "Slime1", "Slime2", "Slime3", "Slime4", "Slime5" },
     QuestNPC15 = { "AcademyTeacher1", "AcademyTeacher2", "AcademyTeacher3", "AcademyTeacher4", "AcademyTeacher5" },
-    QuestNPC16 = { "Swordsman1", "Swordsman1", "Swordsman3", "Swordsman4", "Swordsman5" },
+    QuestNPC16 = { "Swordsman1", "Swordsman2", "Swordsman3", "Swordsman4", "Swordsman5" },
     QuestNPC17 = { "Quincy1", "Quincy2", "Quincy3", "Quincy4", "Quincy5" },
     QuestNPC18 = { "Ninja1", "Ninja2", "Ninja3", "Ninja4", "Ninja5" },
     QuestNPC19 = { "ArenaFighter1", "ArenaFighter2", "ArenaFighter3", "ArenaFighter4", "ArenaFighter5" }
@@ -73,6 +73,7 @@ local AutoStatsEnabled = false
 local SelectedStat = "Melee"
 local AllocateAmount = 1
 local BotStatus = "Ready"
+local LastQuestClaimed = 0
 
 -- [[ UI ELEMENTS ]]
 local StatusLabel = nil
@@ -296,11 +297,21 @@ TeleSec:Dropdown({
 -- Unified Auto Farm
 task.spawn(function()
     while task.wait(0.5) do
-        if AutoFarmEnabled and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+        if AutoFarmEnabled then
+            -- HumanoidRootPart Protection
+            if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then
+                UpdateStatus("Waiting for Character...")
+                continue
+            end
+
             local npc = GetQuestNPC()
-            if npc and npc:FindFirstChild("HumanoidRootPart") then
+            -- Quest Cooldown (5 Seconds)
+            if npc and npc:FindFirstChild("HumanoidRootPart") and (tick() - LastQuestClaimed > 5) then
                 UpdateStatus("Accepting Quest: " .. npc.Name)
-                ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(npc)
+                pcall(function()
+                    ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(npc)
+                end)
+                LastQuestClaimed = tick()
             end
 
             local target = GetTargetMob()
@@ -310,7 +321,9 @@ task.spawn(function()
 
                 local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
                 local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
-                if hit then hit:FireServer() end
+                if hit then 
+                    pcall(function() hit:FireServer() end)
+                end
             else
                 UpdateStatus("Scanning Targets...")
             end
@@ -365,4 +378,4 @@ end)
 HomeTab:Select()
 task.spawn(RunLoader, Window)
 
-print("NattHUB | v3.1.0 Global Release")
+print("NattHUB | v3.2.0 Global Release")
