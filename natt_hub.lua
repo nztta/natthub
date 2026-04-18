@@ -12,7 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
-local VERSION = "3.5.2"
+local VERSION = "3.5.3 (Debug)"
 local Config = {
     Version = VERSION,
     Title = "NattHUB | Sailor Piece " .. VERSION,
@@ -120,18 +120,38 @@ local function GetCurrentLevel()
 end
 
 local function To(targetCFrame)
-    if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then return end
+    if not targetCFrame then print("NattHUB Debug | ERROR: Target CFrame is nil!") return end
+    if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then 
+        print("NattHUB Debug | ERROR: HumanoidRootPart not found!") 
+        return 
+    end
+    
     local hrp = Player.Character.HumanoidRootPart
     local dist = (targetCFrame.Position - hrp.Position).Magnitude
+    print(string.format("NattHUB Debug | Travel Start - Dist: %.1f | Target: %s", dist, tostring(targetCFrame.Position)))
 
-    if dist > 30 then
-        local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear),
-            { CFrame = targetCFrame })
+    -- Visual Debug Part
+    local DebugPart = Instance.new("Part")
+    DebugPart.Size = Vector3.new(2, 2, 2)
+    DebugPart.Color = Color3.fromRGB(255, 0, 0)
+    DebugPart.Shape = Enum.PartType.Ball
+    DebugPart.Anchored = true
+    DebugPart.CanCollide = false
+    DebugPart.Material = Enum.Material.Neon
+    DebugPart.CFrame = targetCFrame
+    DebugPart.Parent = workspace
+    DebugPart.Name = "NattHUB_DebugTarget"
+
+    if dist > 15 then
+        local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
         tween:Play()
         task.wait(dist / 250)
     else
         hrp.CFrame = targetCFrame
     end
+    
+    DebugPart:Destroy()
+    print("NattHUB Debug | Travel Success - Arrived at Target.")
 end
 
 local function UpdateStatus(text)
@@ -422,24 +442,27 @@ task.spawn(function()
                 local npc = GetQuestNPC()
                 -- Quest Cooldown (5 Seconds)
                 if npc and npc:FindFirstChild("HumanoidRootPart") and (tick() - LastQuestClaimed > 5) then
-                    UpdateStatus("Accepting Quest: " .. npc.Name)
+                    print("NattHUB Debug | Objective: Accept Quest from " .. npc.Name)
                     To(npc.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0))
                     task.wait(0.5)
                     pcall(function()
                         ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(npc)
+                        print("NattHUB Debug | Quest Remote Fired.")
                     end)
                     LastQuestClaimed = tick()
                 end
 
                 local target = GetTargetMob()
                 if target and target:FindFirstChild("HumanoidRootPart") then
-                    UpdateStatus("Farming: " .. target.Name)
+                    print("NattHUB Debug | Objective: Farm Mob " .. target.Name)
                     To(target.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0))
                     local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
                     local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
                     if hit then pcall(function() hit:FireServer() end) end
                 else
-                    UpdateStatus("Scanning Targets...")
+                    if not target then
+                        print("NattHUB Debug | Waiting for Target Spawn...")
+                    end
                 end
             else
                 UpdateStatus("Waiting for Character...")
