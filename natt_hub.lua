@@ -88,13 +88,13 @@ local function GetPlayerData(key)
     local data = Player:FindFirstChild("Data")
     if data then
         local val = data:FindFirstChild(key)
-        return val and val.Value or 0
+        if val then return val.Value end
     end
-    -- Fallback to leaderstats for items like Bounty
+    -- Fallback to leaderstats for items like Bounty if not found in Data
     local ls = Player:FindFirstChild("leaderstats")
     if ls then
         local val = ls:FindFirstChild(key)
-        return val and val.Value or 0
+        if val then return val.Value end
     end
     return 0
 end
