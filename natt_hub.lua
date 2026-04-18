@@ -44,8 +44,8 @@ Constants.QuestData = {
     { Min = 7000,  Max = 7999,  NPC = "QuestNPC13", Island = "Shijuku" },
     { Min = 8000,  Max = 8999,  NPC = "QuestNPC14", Island = "Slime" },
     { Min = 9000,  Max = 9999,  NPC = "QuestNPC15", Island = "Academy" },
-    { Min = 10000, Max = 10749, NPC = "QuestNPC16", Island = "Kadgement" },
-    { Min = 10750, Max = 11499, NPC = "QuestNPC17", Island = "Kadgement" },
+    { Min = 10000, Max = 10749, NPC = "QuestNPC16", Island = "Judgement" },
+    { Min = 10750, Max = 11499, NPC = "QuestNPC17", Island = "Judgement" },
     { Min = 11500, Max = 11999, NPC = "QuestNPC18", Island = "Ninja" },
     { Min = 12000, Max = 99999, NPC = "QuestNPC19", Island = "Lawless" }
 }
@@ -132,13 +132,14 @@ function Helpers.To(targetCFrame, stayStill)
 
     hrp.Anchored = false
     if dist > 30 then
-        local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear), { CFrame = targetCFrame })
+        local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear),
+            { CFrame = targetCFrame })
         tween:Play()
         task.wait(dist / 250)
     else
         hrp.CFrame = targetCFrame
     end
-    
+
     if stayStill then
         hrp.Anchored = true
     end
@@ -216,7 +217,7 @@ function Loader.Run(callback)
     task.wait(0.8)
 
     if callback then callback() end
-    
+
     LoaderGui:Destroy()
     Blur:Destroy()
 end
@@ -237,9 +238,13 @@ function UIManager.Init()
         Transparent = true,
         SideBarSize = 200
     })
+    Window:DisableTopbarButtons({ "Close", "Minimize" })
 
-    if Window.SetVisible then Window:SetVisible(false)
-    elseif Window.Instance then Window.Instance.Enabled = false end
+    if Window.SetVisible then
+        Window:SetVisible(false)
+    elseif Window.Instance then
+        Window.Instance.Enabled = false
+    end
     return Window
 end
 
@@ -265,12 +270,12 @@ function UIManager.CreateToggle()
 
     ToggleBtn.MouseButton1Click:Connect(function()
         if Window then
-            if Window.Toggle then 
+            if Window.Toggle then
                 Window:Toggle()
             elseif Window.Instance then
                 Window.Instance.Enabled = not Window.Instance.Enabled
             end
-            
+
             local currentState = true
             if Window.Instance then currentState = Window.Instance.Enabled end
             TweenService:Create(ToggleBtn, TweenInfo.new(0.2), { Rotation = currentState and 0 or 180 }):Play()
@@ -300,17 +305,17 @@ end
 local function CreateTabs()
     -- [[ HOME TAB ]]
     local HomeTab = Window:Tab({ Title = "Home", Icon = "solar:home-2-bold" })
-    
+
     local PlayerSec = HomeTab:Section({ Title = "Player Information", Opened = true })
     UI.LevelLabel = PlayerSec:Paragraph({ Title = "Level", Desc = "Loading..." })
     UI.MoneyLabel = PlayerSec:Paragraph({ Title = "Currency", Desc = "0 Money | 0 Gems" })
     UI.BountyLabel = PlayerSec:Paragraph({ Title = "Bounty", Desc = "0 Bounty" })
     UI.PointsLabel = PlayerSec:Paragraph({ Title = "Stat Points", Desc = "0 Available" })
-    
+
     local DashboardSec = HomeTab:Section({ Title = "Engine Status", Opened = true })
     UI.StatusLabel = DashboardSec:Paragraph({ Title = "Bot Status", Desc = State.BotStatus })
     UI.PopLabel = DashboardSec:Paragraph({ Title = "Players on Server", Desc = "Calculating..." })
-    
+
     HomeTab:Button({
         Title = "Join Discord",
         Desc = "discord.gg/natthub",
@@ -336,16 +341,16 @@ local function CreateTabs()
     -- [[ BOSS TAB ]]
     local BossTab = Window:Tab({ Title = "Bosses", Icon = "solar:ghost-bold" })
     local BossAuto = BossTab:Section({ Title = "Boss Automation", Opened = true })
-    
+
     local bossOptions = { "None", "All Bosses" }
     for _, b in ipairs(Constants.BossConfig) do table.insert(bossOptions, b.Name) end
-    
+
     BossAuto:Dropdown({
         Title = "Target Boss",
         Values = bossOptions,
         Callback = function(v) State.SelectedBoss = v end,
     })
-    
+
     BossAuto:Toggle({
         Title = "Auto Kill Boss",
         Value = State.AutoBossEnabled,
@@ -354,7 +359,7 @@ local function CreateTabs()
             if UI.StatusLabel then UI.StatusLabel:SetDesc(v and "Hunting Boss..." or "Ready") end
         end
     })
-    
+
     local BossTrackerSec = BossTab:Section({ Title = "Timed Boss Tracker", Opened = false })
     for _, boss in ipairs(Constants.BossConfig) do
         UI.BossLabels[boss.Name] = BossTrackerSec:Paragraph({ Title = boss.Name, Desc = "Loading..." })
@@ -375,7 +380,14 @@ local function CreateTabs()
             if n then State.AllocateAmount = n < 1 and 1 or n end
         end,
     })
-    StatSec:Toggle({ Title = "Auto Allocate", Value = State.AutoStatsEnabled, Callback = function(v) State.AutoStatsEnabled = v end })
+    StatSec:Toggle({
+        Title = "Auto Allocate",
+        Value = State.AutoStatsEnabled,
+        Callback = function(v)
+            State.AutoStatsEnabled =
+                v
+        end
+    })
     StatSec:Button({
         Title = "Reset Stats",
         Callback = function()
@@ -387,8 +399,9 @@ local function CreateTabs()
     -- [[ TELEPORT TAB ]]
     local TeleTab = Window:Tab({ Title = "Teleport", Icon = "solar:map-point-wave-bold" })
     local TeleSec = TeleTab:Section({ Title = "World Navigation", Opened = true })
-    local Locs = { "Starter", "Jungle", "Desert", "Snow", "Sailor", "Shibuya", "HallowIsland", "Boss", "Dungeon", "Shijuku",
-        "Slime", "Academy", "Kadgement", "Ninja", "Lawless", "Tower" }
+    local Locs = { "Starter", "Jungle", "Desert", "Snow", "Sailor", "Shibuya", "HallowIsland", "Boss", "Dungeon",
+        "Shijuku",
+        "Slime", "Academy", "Judgement", "Ninja", "Lawless", "Tower" }
     TeleSec:Dropdown({
         Title = "Destination",
         Values = Locs,
@@ -511,7 +524,9 @@ local function InitAutomation()
                     local hrp = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
                     if hrp then
                         local d = (v.HumanoidRootPart.Position - hrp.Position).Magnitude
-                        if d < dist and d < 3000 then dist = d; closest = v end
+                        if d < dist and d < 3000 then
+                            dist = d; closest = v
+                        end
                     end
                 end
             end
@@ -528,7 +543,9 @@ local function InitAutomation()
                 if boss then
                     if UI.StatusLabel then UI.StatusLabel:SetDesc("Killing Boss: " .. boss.Parent.Name) end
                     Helpers.To(boss.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0), true)
-                    local hit = ReplicatedStorage:FindFirstChild("CombatSystem") and ReplicatedStorage.CombatSystem:FindFirstChild("Remotes") and ReplicatedStorage.CombatSystem.Remotes:FindFirstChild("RequestHit")
+                    local hit = ReplicatedStorage:FindFirstChild("CombatSystem") and
+                        ReplicatedStorage.CombatSystem:FindFirstChild("Remotes") and
+                        ReplicatedStorage.CombatSystem.Remotes:FindFirstChild("RequestHit")
                     if hit then pcall(function() hit:FireServer() end) end
                 else
                     if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then Player.Character.HumanoidRootPart.Anchored = false end
@@ -536,13 +553,14 @@ local function InitAutomation()
             elseif State.AutoFarmEnabled then
                 if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                     local npc = GetQuestNPC()
-                    
+
                     if not npc then
                         local myLevel = Helpers.GetCurrentLevel()
                         for _, q in ipairs(Constants.QuestData) do
                             if myLevel >= q.Min and myLevel <= q.Max then
                                 if UI.StatusLabel then UI.StatusLabel:SetDesc("Warping to Island: " .. q.Island) end
-                                ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("TeleportToPortal"):FireServer(q.Island)
+                                ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("TeleportToPortal"):FireServer(q
+                                    .Island)
                                 task.wait(3); break
                             end
                         end
@@ -552,7 +570,10 @@ local function InitAutomation()
                         if UI.StatusLabel then UI.StatusLabel:SetDesc("Accepting Quest: " .. npc.Name) end
                         Helpers.To(npc.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0), true)
                         task.wait(0.5)
-                        pcall(function() ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(npc.Name) end)
+                        pcall(function()
+                            ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept")
+                                :FireServer(npc.Name)
+                        end)
                         State.LastQuestClaimed = tick()
                     end
 
@@ -560,7 +581,9 @@ local function InitAutomation()
                     if target and target:FindFirstChild("HumanoidRootPart") then
                         if UI.StatusLabel then UI.StatusLabel:SetDesc("Farming: " .. target.Name) end
                         Helpers.To(target.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0), true)
-                        local hit = ReplicatedStorage:FindFirstChild("CombatSystem") and ReplicatedStorage.CombatSystem:FindFirstChild("Remotes") and ReplicatedStorage.CombatSystem.Remotes:FindFirstChild("RequestHit")
+                        local hit = ReplicatedStorage:FindFirstChild("CombatSystem") and
+                            ReplicatedStorage.CombatSystem:FindFirstChild("Remotes") and
+                            ReplicatedStorage.CombatSystem.Remotes:FindFirstChild("RequestHit")
                         if hit then pcall(function() hit:FireServer() end) end
                     else
                         if UI.StatusLabel then UI.StatusLabel:SetDesc("Scanning Targets...") end
@@ -578,7 +601,8 @@ local function InitAutomation()
         while task.wait(0.5) do
             if State.AutoStatsEnabled then
                 pcall(function()
-                    ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("AllocateStat"):FireServer(State.SelectedStat, State.AllocateAmount)
+                    ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("AllocateStat"):FireServer(
+                        State.SelectedStat, State.AllocateAmount)
                 end)
             end
         end
@@ -592,7 +616,7 @@ Loader.Run(function()
     UIManager.CreateToggle()
     InitSync()
     InitAutomation()
-    
+
     WindUI:Notify({
         Title = "NattHUB",
         Content = "Script Loaded Successfully! Version: " .. Constants.VERSION,
