@@ -170,13 +170,14 @@ function Helpers.To(targetCFrame, stayStill)
         -- Safe traveling: Lock anchored to tween effortlessly across the map
         hrp.Anchored = true
         local prevBv = hrp:FindFirstChild("NattHUB_AntiFall")
-        if prevBv then prevBv:Destroy() end 
+        if prevBv then prevBv:Destroy() end
 
         if dist > 30 then
             warn("[NattHUB Debug] Distance > 30: Starting Tween Movement")
-            local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear), { CFrame = targetCFrame })
+            local tween = TweenService:Create(hrp, TweenInfo.new(dist / 150, Enum.EasingStyle.Linear),
+                { CFrame = targetCFrame })
             tween:Play()
-            task.wait(dist / 250)
+            task.wait(dist / 150)
         else
             hrp.CFrame = targetCFrame
         end
@@ -477,7 +478,7 @@ local function CreateTabs()
 
     -- [[ COMBAT SETTINGS (MAIN TAB) ]]
     local WeaponSec = MainTab:Section({ Title = "Weapon Management", Opened = false })
-    
+
     local weaponDropdown = WeaponSec:Dropdown({
         Title = "Select Weapon",
         Values = { "None" },
@@ -506,8 +507,8 @@ local function CreateTabs()
     })
 
     local SkillSec = MainTab:Section({ Title = "Auto Skills & Combat", Opened = false })
-    SkillSec:Toggle({ Title = "Fast Auto Click", Value = State.AutoClickEnabled, Callback = function(v) State.AutoClickEnabled = v end })
-    SkillSec:Toggle({ Title = "Auto Use Skills", Value = State.AutoSkillEnabled, Callback = function(v) State.AutoSkillEnabled = v end })
+    SkillSec:Toggle({ Title = "Auto Use Skills", Value = State.AutoSkillEnabled, Callback = function(v) State.AutoSkillEnabled =
+        v end })
     SkillSec:Toggle({ Title = "Use Z Skill", Value = false, Callback = function(v) SkillToggles.Z = v end })
     SkillSec:Toggle({ Title = "Use X Skill", Value = false, Callback = function(v) SkillToggles.X = v end })
     SkillSec:Toggle({ Title = "Use C Skill", Value = false, Callback = function(v) SkillToggles.C = v end })
@@ -524,13 +525,14 @@ local function CreateTabs()
             if n then State.AllocateAmount = n < 1 and 1 or n end
         end,
     })
-    StatSec:Toggle({ Title = "Auto Allocate", Value = State.AutoStatsEnabled, Callback = function(v) State.AutoStatsEnabled = v end })
+    StatSec:Toggle({ Title = "Auto Allocate", Value = State.AutoStatsEnabled, Callback = function(v) State.AutoStatsEnabled =
+        v end })
     StatSec:Paragraph({ Title = "Select Targets", Desc = "Enable multiple stats to allocate equally." })
     StatSec:Toggle({ Title = "Melee", Value = false, Callback = function(v) StatToggles.Melee = v end })
     StatSec:Toggle({ Title = "Defense", Value = false, Callback = function(v) StatToggles.Defense = v end })
     StatSec:Toggle({ Title = "Sword", Value = false, Callback = function(v) StatToggles.Sword = v end })
     StatSec:Toggle({ Title = "Power", Value = false, Callback = function(v) StatToggles.Power = v end })
-    
+
     StatSec:Button({
         Title = "Reset Stats",
         Callback = function()
@@ -694,26 +696,58 @@ local function InitAutomation()
         while task.wait(0.5) do
             local success, err = pcall(function()
                 if State.AutoBossEnabled then
+                    warn("[NattHUB Debug] --- AutoBoss Loop Start ---")
                     local boss = GetActiveBoss()
+                    
+                    -- Get Boss Config for debug and warp
+                    local targetBossConfig = nil
+                    if State.SelectedBoss ~= "None" and State.SelectedBoss ~= "All Bosses" then
+                        for _, b in ipairs(Constants.BossConfig) do
+                            if b.Name == State.SelectedBoss then targetBossConfig = b; break end
+                        end
+                    end
+
+                    if targetBossConfig then
+                        warn("[NattHUB Debug] Target Boss: " .. targetBossConfig.Name)
+                        warn("[NattHUB Debug] Target Island: " .. targetBossConfig.Island)
+                    end
+
                     if boss then
                         if UI.StatusLabel then UI.StatusLabel:SetDesc("Killing Boss: " .. boss.Parent.Name) end
                         local bossHRP = boss:FindFirstChild("HumanoidRootPart")
                         if bossHRP then
-                            Helpers.To(bossHRP.CFrame * CFrame.new(0, 5, 0), true)
+                            -- Consistent 7-stud height offset
+                            Helpers.To(bossHRP.CFrame * CFrame.new(0, 7, 0), true)
                         end
                         local hit = ReplicatedStorage:FindFirstChild("CombatSystem") and
                             ReplicatedStorage.CombatSystem:FindFirstChild("Remotes") and
                             ReplicatedStorage.CombatSystem.Remotes:FindFirstChild("RequestHit")
                         if hit then pcall(function() hit:FireServer() end) end
                     else
-                        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then Player.Character.HumanoidRootPart.Anchored = false end
+                        warn("[NattHUB Debug] No active boss found in range.")
+                        if UI.StatusLabel then UI.StatusLabel:SetDesc("Scanning Boss...") end
+                        
+                        -- EMERGENCY WARP FOR BOSSES
+                        if targetBossConfig and (tick() - State.LastWarpTime > 10) then
+                            warn("[NattHUB Debug] Boss " .. targetBossConfig.Name .. " missing. Warping to " .. targetBossConfig.Island)
+                            if UI.StatusLabel then UI.StatusLabel:SetDesc("Warping to Boss Island: " .. targetBossConfig.Island) end
+                            local warpRemote = ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild("TeleportToPortal", 5)
+                            if warpRemote then 
+                                pcall(function() warpRemote:FireServer(targetBossConfig.Island) end)
+                                State.LastWarpTime = tick()
+                            end
+                        end
+
+                        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then 
+                            Player.Character.HumanoidRootPart.Anchored = false 
+                        end
                     end
                 elseif State.AutoFarmEnabled then
                     if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                         warn("[NattHUB Debug] --- AutoFarm Loop Start ---")
                         local hasQuest = Helpers.HasActiveQuest()
                         local npc = nil
-                        
+
                         -- Determine target quest data upfront
                         local myLevel = Helpers.GetCurrentLevel()
                         local questConfig = nil
@@ -725,7 +759,8 @@ local function InitAutomation()
 
                         if questConfig then
                             local mobNames = Constants.MobMapping[questConfig.NPC]
-                            local mobDisplay = type(mobNames) == "table" and table.concat(mobNames, ", ") or tostring(mobNames)
+                            local mobDisplay = type(mobNames) == "table" and table.concat(mobNames, ", ") or
+                            tostring(mobNames)
                             warn("[NattHUB Debug] Target Island: " .. questConfig.Island)
                             warn("[NattHUB Debug] Target NPC: " .. questConfig.NPC)
                             warn("[NattHUB Debug] Target Mobs: " .. mobDisplay)
@@ -734,7 +769,8 @@ local function InitAutomation()
                             if not hasQuest then
                                 -- Global Search for NPC (Verify Presence)
                                 local foundNPC = nil
-                                local containers = { workspace:FindFirstChild("ServiceNPCs"), workspace:FindFirstChild("NPCs"), workspace }
+                                local containers = { workspace:FindFirstChild("ServiceNPCs"), workspace:FindFirstChild(
+                                "NPCs"), workspace }
                                 for _, container in ipairs(containers) do
                                     if container then
                                         local candidate = container:FindFirstChild(questConfig.NPC)
@@ -753,29 +789,37 @@ local function InitAutomation()
                                     else
                                         -- Found but not on head - Warp Required
                                         if tick() - State.LastWarpTime > 10 then
-                                            warn("[NattHUB Debug] NPC found but too far (" .. math.floor(dist) .. " studs). Retrying Warp...")
-                                            if UI.StatusLabel then UI.StatusLabel:SetDesc("Retrying Warp: " .. questConfig.Island) end
-                                            local warpRemote = ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild("TeleportToPortal", 5)
-                                            if warpRemote then 
+                                            warn("[NattHUB Debug] NPC found but too far (" ..
+                                            math.floor(dist) .. " studs). Retrying Warp...")
+                                            if UI.StatusLabel then UI.StatusLabel:SetDesc("Retrying Warp: " ..
+                                                questConfig.Island) end
+                                            local warpRemote = ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild(
+                                            "TeleportToPortal", 5)
+                                            if warpRemote then
                                                 pcall(function() warpRemote:FireServer(questConfig.Island) end)
                                                 State.LastWarpTime = tick()
                                             end
                                         else
-                                            if UI.StatusLabel then UI.StatusLabel:SetDesc("Warp Cooldown... (" .. math.floor(10 - (tick() - State.LastWarpTime)) .. "s)") end
+                                            if UI.StatusLabel then UI.StatusLabel:SetDesc("Warp Cooldown... (" ..
+                                                math.floor(10 - (tick() - State.LastWarpTime)) .. "s)") end
                                         end
                                     end
                                 else
                                     -- NPC Not found at all in workspace - Warp Required
                                     if tick() - State.LastWarpTime > 10 then
-                                        warn("[NattHUB Debug] NPC " .. questConfig.NPC .. " NOT FOUND. Warping to " .. questConfig.Island)
-                                        if UI.StatusLabel then UI.StatusLabel:SetDesc("Island Warp: " .. questConfig.Island) end
-                                        local warpRemote = ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild("TeleportToPortal", 5)
-                                        if warpRemote then 
+                                        warn("[NattHUB Debug] NPC " ..
+                                        questConfig.NPC .. " NOT FOUND. Warping to " .. questConfig.Island)
+                                        if UI.StatusLabel then UI.StatusLabel:SetDesc("Island Warp: " ..
+                                            questConfig.Island) end
+                                        local warpRemote = ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild(
+                                        "TeleportToPortal", 5)
+                                        if warpRemote then
                                             pcall(function() warpRemote:FireServer(questConfig.Island) end)
                                             State.LastWarpTime = tick()
                                         end
                                     else
-                                        if UI.StatusLabel then UI.StatusLabel:SetDesc("Warp Cooldown... (" .. math.floor(10 - (tick() - State.LastWarpTime)) .. "s)") end
+                                        if UI.StatusLabel then UI.StatusLabel:SetDesc("Warp Cooldown... (" ..
+                                            math.floor(10 - (tick() - State.LastWarpTime)) .. "s)") end
                                     end
                                 end
                             end
@@ -789,7 +833,7 @@ local function InitAutomation()
                             warn("[NattHUB Debug] Firing QuestAccept Server Event")
                             pcall(function()
                                 local qRemote = ReplicatedStorage:FindFirstChild("RemoteEvents") and
-                                ReplicatedStorage.RemoteEvents:FindFirstChild("QuestAccept")
+                                    ReplicatedStorage.RemoteEvents:FindFirstChild("QuestAccept")
                                 if qRemote then qRemote:FireServer(npc.Name) end
                             end)
                             State.LastQuestClaimed = tick()
@@ -810,21 +854,25 @@ local function InitAutomation()
                         else
                             warn("[NattHUB Debug] No targets found in range.")
                             if UI.StatusLabel then UI.StatusLabel:SetDesc("Scanning Targets...") end
-                            
-                            -- FIX: If we have a quest but no targets exist, it means we are likely on the wrong island or too far. 
+
+                            -- FIX: If we have a quest but no targets exist, it means we are likely on the wrong island or too far.
                             -- Trigger a warp to the island corresponding to our level.
                             if hasQuest and questConfig then
                                 if tick() - State.LastWarpTime > 10 then
-                                    warn("[NattHUB Debug] No targets reachable for active quest. Triggering emergency Warp to " .. questConfig.Island)
-                                    if UI.StatusLabel then UI.StatusLabel:SetDesc("Emergency Warp: " .. questConfig.Island) end
-                                    local warpRemote = ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild("TeleportToPortal", 5)
-                                    if warpRemote then 
+                                    warn(
+                                    "[NattHUB Debug] No targets reachable for active quest. Triggering emergency Warp to " ..
+                                    questConfig.Island)
+                                    if UI.StatusLabel then UI.StatusLabel:SetDesc("Emergency Warp: " ..
+                                        questConfig.Island) end
+                                    local warpRemote = ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild(
+                                    "TeleportToPortal", 5)
+                                    if warpRemote then
                                         pcall(function() warpRemote:FireServer(questConfig.Island) end)
                                         State.LastWarpTime = tick()
                                     end
                                 end
                             end
-                            
+
                             if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                                 Player.Character.HumanoidRootPart.Anchored = false
                             end
@@ -846,14 +894,14 @@ local function InitAutomation()
             local success, err = pcall(function()
                 if State.AutoStatsEnabled then
                     local event = ReplicatedStorage:FindFirstChild("RemoteEvents") and
-                    ReplicatedStorage.RemoteEvents:FindFirstChild("AllocateStat")
+                        ReplicatedStorage.RemoteEvents:FindFirstChild("AllocateStat")
                     if event then
                         local activeStats = {}
                         if StatToggles.Melee then table.insert(activeStats, "Melee") end
                         if StatToggles.Defense then table.insert(activeStats, "Defense") end
                         if StatToggles.Sword then table.insert(activeStats, "Sword") end
                         if StatToggles.Power then table.insert(activeStats, "Power") end
-                        
+
                         for _, statName in ipairs(activeStats) do
                             event:FireServer(statName, State.AllocateAmount)
                         end
@@ -871,7 +919,7 @@ local function InitAutomation()
         while task.wait(0.2) do
             pcall(function()
                 if not Player.Character then return end
-                
+
                 -- Auto Equip Weapon
                 if State.AutoWeaponEnabled and State.SelectedWeapon ~= "None" then
                     local tool = Player.Backpack:FindFirstChild(State.SelectedWeapon)
@@ -879,13 +927,13 @@ local function InitAutomation()
                         Player.Character.Humanoid:EquipTool(tool)
                     end
                 end
-                
+
                 -- Auto Skills (ONLY IF Farming OR Bossing)
                 if State.AutoSkillEnabled and (State.AutoFarmEnabled or State.AutoBossEnabled) then
                     local abilitySystem = ReplicatedStorage:FindFirstChild("AbilitySystem")
                     local remotes = abilitySystem and abilitySystem:FindFirstChild("Remotes")
                     local reqAbility = remotes and remotes:FindFirstChild("RequestAbility")
-                    
+
                     if reqAbility then
                         if SkillToggles.Z then reqAbility:FireServer(1) end
                         if SkillToggles.X then reqAbility:FireServer(2) end
