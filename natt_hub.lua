@@ -17,7 +17,7 @@ local Config = {
     Title = "NattHUB | Sailor Piece",
     Icon = "solar:planet-3-bold-duotone",
     LogoID = "rbxassetid://117953684635635",
-    Version = "3.0.0",
+    Version = "3.1.0",
     Folder = "NattHUB_Configs",
     Author = "by Natt Dev"
 }
@@ -61,7 +61,7 @@ local MobMapping = {
     QuestNPC13 = { "Curse1", "Curse2", "Curse3", "Curse4", "Curse5" },
     QuestNPC14 = { "Slime1", "Slime2", "Slime3", "Slime4", "Slime5" },
     QuestNPC15 = { "AcademyTeacher1", "AcademyTeacher2", "AcademyTeacher3", "AcademyTeacher4", "AcademyTeacher5" },
-    QuestNPC16 = { "Swordsman1", "Swordsman2", "Swordsman3", "Swordsman4", "Swordsman5" },
+    QuestNPC16 = { "Swordsman1", "Swordsman1", "Swordsman3", "Swordsman4", "Swordsman5" },
     QuestNPC17 = { "Quincy1", "Quincy2", "Quincy3", "Quincy4", "Quincy5" },
     QuestNPC18 = { "Ninja1", "Ninja2", "Ninja3", "Ninja4", "Ninja5" },
     QuestNPC19 = { "ArenaFighter1", "ArenaFighter2", "ArenaFighter3", "ArenaFighter4", "ArenaFighter5" }
@@ -80,6 +80,7 @@ local PopLabel = nil
 local LevelLabel = nil
 local MoneyLabel = nil
 local BountyLabel = nil
+local PointsLabel = nil
 
 -- [[ HELPERS ]]
 local function GetPlayerData(key)
@@ -138,7 +139,9 @@ local function GetTargetMob()
             local v = npcContainer:FindFirstChild(name)
             if v and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
                 local d = (v.HumanoidRootPart.Position - Player.Character.HumanoidRootPart.Position).Magnitude
-                if d < dist then dist = d; closest = v end
+                if d < dist then
+                    dist = d; closest = v
+                end
             end
         end
         return closest
@@ -151,7 +154,7 @@ local function RunLoader(windowObj)
     local LoaderGui = Instance.new("ScreenGui", PlayerGui)
     LoaderGui.Name = "NattHUB_Loader"
     LoaderGui.DisplayOrder = 10000
-    
+
     local LoaderFrame = Instance.new("Frame", LoaderGui)
     LoaderFrame.BackgroundColor3 = Color3.fromRGB(3, 3, 5)
     LoaderFrame.Size = UDim2.fromScale(1, 1)
@@ -176,17 +179,19 @@ local function RunLoader(windowObj)
     StatusTxt.TextSize = 14
 
     -- Animation
-    local drift = TweenService:Create(Logo, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
-        Position = UDim2.fromScale(0.51, 0.51),
-        Size = UDim2.fromOffset(150, 150)
-    })
+    local drift = TweenService:Create(Logo,
+        TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+            Position = UDim2.fromScale(0.51, 0.51),
+            Size = UDim2.fromOffset(150, 150)
+        })
     drift:Play()
     TweenService:Create(Blur, TweenInfo.new(0.5), { Size = 24 }):Play()
 
     local steps = { "Initializing Assets...", "Syncing Player Data...", "Welcome!" }
     for i, s in ipairs(steps) do
         StatusTxt.Text = s
-        TweenService:Create(Logo, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Rotation = i * 360 }):Play()
+        TweenService:Create(Logo, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+            { Rotation = i * 360 }):Play()
         task.wait(1)
     end
 
@@ -204,7 +209,8 @@ local function RunLoader(windowObj)
 end
 
 -- [[ WINDUI INITIALIZATION ]]
-local WindUI = (loadstring or load)(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+local WindUI = (loadstring or load)(game:HttpGet(
+    "https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 local Window = WindUI:CreateWindow({
     Title = Config.Title,
     Icon = Config.Icon,
@@ -224,6 +230,7 @@ local PlayerSec = HomeTab:Section({ Title = "Player Information", Opened = true 
 LevelLabel = PlayerSec:Paragraph({ Title = "Level", Desc = "Lv. 0 (0 EXP)" })
 MoneyLabel = PlayerSec:Paragraph({ Title = "Currency", Desc = "0 Money | 0 Gems" })
 BountyLabel = PlayerSec:Paragraph({ Title = "Bounty", Desc = "0 Bounty" })
+PointsLabel = PlayerSec:Paragraph({ Title = "Stat Points", Desc = "0 Available" })
 
 local DashboardSec = HomeTab:Section({ Title = "Engine Status", Opened = true })
 StatusLabel = DashboardSec:Paragraph({ Title = "Bot Status", Desc = BotStatus })
@@ -232,23 +239,25 @@ PopLabel = DashboardSec:Paragraph({ Title = "Players on Server", Desc = "Calcula
 HomeTab:Button({
     Title = "Join Discord",
     Desc = "discord.gg/natthub",
-    Callback = function() 
+    Callback = function()
         local clipboard = (setclipboard or toclipboard or print)
-        clipboard("https://discord.gg/natthub") 
+        clipboard("https://discord.gg/natthub")
     end,
 })
 
 local MainTab = Window:Tab({ Title = "Main", Icon = "solar:star-bold" })
-local MainFarm = MainTab:Section({ Title = "Automation", HideButton = true })
+local MainFarm = MainTab:Section({ Title = "Automation", Opened = true })
 MainFarm:Toggle({
     Title = "Auto Farm Level",
     Desc = "Automated Questing & Mob Farming",
     Value = false,
-    Callback = function(v) AutoFarmEnabled = v; UpdateStatus(v and "Farming..." or "Ready") end
+    Callback = function(v)
+        AutoFarmEnabled = v; UpdateStatus(v and "Farming..." or "Ready")
+    end
 })
 
 local StatsTab = Window:Tab({ Title = "Auto Stats", Icon = "solar:chart-square-bold" })
-local StatSec = StatsTab:Section({ Title = "Attributes", HideButton = true })
+local StatSec = StatsTab:Section({ Title = "Attributes", Opened = true })
 StatSec:Dropdown({
     Title = "Target Stat",
     Values = { "Melee", "Defense", "Sword", "Power" },
@@ -256,9 +265,9 @@ StatSec:Dropdown({
 })
 StatSec:Input({
     Title = "Points Per Cycle",
-    Callback = function(v) 
-        local n = tonumber(v) 
-        if n then AllocateAmount = n < 1 and 1 or n end 
+    Callback = function(v)
+        local n = tonumber(v)
+        if n then AllocateAmount = n < 1 and 1 or n end
     end,
 })
 StatSec:Toggle({ Title = "Auto Allocate", Value = false, Callback = function(v) AutoStatsEnabled = v end })
@@ -272,7 +281,8 @@ StatSec:Button({
 
 local TeleTab = Window:Tab({ Title = "Teleport", Icon = "solar:map-point-wave-bold" })
 local TeleSec = TeleTab:Section({ Title = "World Navigation" })
-local Locs = { "Starter", "Jungle", "Desert", "Snow", "Sailor", "Shibuya", "HallowIsland", "Boss", "Dungeon", "Shijuku", "Slime", "Academy", "Kadgement", "Ninja", "Lawless", "Tower" }
+local Locs = { "Starter", "Jungle", "Desert", "Snow", "Sailor", "Shibuya", "HallowIsland", "Boss", "Dungeon", "Shijuku",
+    "Slime", "Academy", "Kadgement", "Ninja", "Lawless", "Tower" }
 TeleSec:Dropdown({
     Title = "Destination",
     Values = Locs,
@@ -297,7 +307,7 @@ task.spawn(function()
             if target and target:FindFirstChild("HumanoidRootPart") then
                 UpdateStatus("Farming: " .. target.Name)
                 Player.Character.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0)
-                
+
                 local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
                 local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
                 if hit then hit:FireServer() end
@@ -313,7 +323,8 @@ task.spawn(function()
     while task.wait(0.5) do
         if AutoStatsEnabled then
             pcall(function()
-                ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("AllocateStat"):FireServer(SelectedStat, AllocateAmount)
+                ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("AllocateStat"):FireServer(SelectedStat,
+                    AllocateAmount)
             end)
         end
     end
@@ -338,6 +349,10 @@ local function SyncUI()
         local bounty = GetPlayerData("Bounty")
         BountyLabel:Set({ Title = "Bounty", Desc = bounty .. " Bounty" })
     end
+    if PointsLabel then
+        local pts = GetPlayerData("StatPoints")
+        PointsLabel:Set({ Title = "Stat Points", Desc = pts .. " Available" })
+    end
 end
 
 -- Finalization
@@ -350,4 +365,4 @@ end)
 HomeTab:Select()
 task.spawn(RunLoader, Window)
 
-print("NattHUB | v3.0.0 Global Release")
+print("NattHUB | v3.1.0 Global Release")
