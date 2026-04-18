@@ -17,7 +17,7 @@ local Config = {
     Title = "NattHUB | Sailor Piece",
     Icon = "solar:planet-3-bold-duotone",
     LogoID = "rbxassetid://117953684635635",
-    Version = "3.3.0",
+    Version = "3.4.0",
     Folder = "NattHUB_Configs",
     Author = "by Natt Dev"
 }
@@ -68,21 +68,23 @@ local MobMapping = {
 }
 
 local BossConfig = {
-    { Name = "Jinwoo", Container = "TimedBossSpawn_JinwooBoss_Container", Boss = "TimedBossSpawn_JinwooBoss" },
-    { Name = "Gojo", Container = "TimedBossSpawn_GojoBoss_Container", Boss = "TimedBossSpawn_GojoBoss" },
-    { Name = "Sukuna", Container = "TimedBossSpawn_SukunaBoss_Container", Boss = "TimedBossSpawn_SukunaBoss" },
-    { Name = "Alucard", Container = "TimedBossSpawn_AlucardBoss_Container", Boss = "TimedBossSpawn_AlucardBoss" },
-    { Name = "Aizen", Container = "TimedBossSpawn_AizenBoss_Container", Boss = "TimedBossSpawn_AizenBoss" },
-    { Name = "Madoka", Container = "TimedBossSpawn_MadokaBoss_Container", Boss = "TimedBossSpawn_MadokaBoss" },
-    { Name = "Ragna", Container = "TimedBossSpawn_RagnaBoss_Container", Boss = "TimedBossSpawn_RagnaBoss" },
-    { Name = "Strongest Shinobi", Container = "TimedBossSpawn_StrongestShinobiBoss_Container", Boss = "TimedBossSpawn_StrongestShinobiBoss" },
-    { Name = "Yamato", Container = "TimedBossSpawn_Yamato_Container", Boss = "TimedBossSpawn_YamatoBoss" },
-    { Name = "Yuji", Container = "TimedBossSpawn_YujiBoss_Container", Boss = "TimedBossSpawn_YujiBoss" }
+    { Name = "Jinwoo", Container = "TimedBossSpawn_JinwooBoss_Container", Boss = "TimedBossSpawn_JinwooBoss", NPCFolder = "JinwooBoss" },
+    { Name = "Gojo", Container = "TimedBossSpawn_GojoBoss_Container", Boss = "TimedBossSpawn_GojoBoss", NPCFolder = "GojoBoss" },
+    { Name = "Sukuna", Container = "TimedBossSpawn_SukunaBoss_Container", Boss = "TimedBossSpawn_SukunaBoss", NPCFolder = "SukunaBoss" },
+    { Name = "Alucard", Container = "TimedBossSpawn_AlucardBoss_Container", Boss = "TimedBossSpawn_AlucardBoss", NPCFolder = "AlucardBoss" },
+    { Name = "Aizen", Container = "TimedBossSpawn_AizenBoss_Container", Boss = "TimedBossSpawn_AizenBoss", NPCFolder = "AizenBoss" },
+    { Name = "Madoka", Container = "TimedBossSpawn_MadokaBoss_Container", Boss = "TimedBossSpawn_MadokaBoss", NPCFolder = "MadokaBoss" },
+    { Name = "Ragna", Container = "TimedBossSpawn_RagnaBoss_Container", Boss = "TimedBossSpawn_RagnaBoss", NPCFolder = "RagnaBoss" },
+    { Name = "Strongest Shinobi", Container = "TimedBossSpawn_StrongestShinobiBoss_Container", Boss = "TimedBossSpawn_StrongestShinobiBoss", NPCFolder = "StrongestShinobiBoss" },
+    { Name = "Yamato", Container = "TimedBossSpawn_Yamato_Container", Boss = "TimedBossSpawn_YamatoBoss", NPCFolder = "YamatoBoss" },
+    { Name = "Yuji", Container = "TimedBossSpawn_YujiBoss_Container", Boss = "TimedBossSpawn_YujiBoss", NPCFolder = "YujiBoss" }
 }
 
 -- [[ STATE ]]
 local AutoFarmEnabled = false
 local AutoStatsEnabled = false
+local AutoBossEnabled = false
+local SelectedBoss = "None"
 local SelectedStat = "Melee"
 local AllocateAmount = 1
 local BotStatus = "Ready"
@@ -138,6 +140,37 @@ local function GetBossTime(config)
         end
     end
     return "N/A"
+end
+
+local function GetActiveBoss()
+    local npcContainer = workspace:FindFirstChild("NPCs")
+    if not npcContainer then return nil end
+
+    -- Helper to find boss npc in folder
+    local function FindBossInFolder(folderName)
+        local folder = npcContainer:FindFirstChild(folderName)
+        if folder then
+            local boss = folder:FindFirstChild("Boss")
+            if boss and boss:FindFirstChild("HumanoidRootPart") and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+                return boss
+            end
+        end
+        return nil
+    end
+
+    if SelectedBoss ~= "None" and SelectedBoss ~= "All Bosses" then
+        for _, b in ipairs(BossConfig) do
+            if b.Name == SelectedBoss then
+                return FindBossInFolder(b.NPCFolder)
+            end
+        end
+    elseif SelectedBoss == "All Bosses" then
+        for _, b in ipairs(BossConfig) do
+            local found = FindBossInFolder(b.NPCFolder)
+            if found then return found end
+        end
+    end
+    return nil
 end
 
 local function GetQuestNPC()
@@ -218,12 +251,12 @@ local function RunLoader(windowObj)
     drift:Play()
     TweenService:Create(Blur, TweenInfo.new(0.5), { Size = 24 }):Play()
 
-    local steps = { "Initializing Assets...", "Syncing Player Data...", "Scanning Bosses...", "Welcome!" }
+    local steps = { "Initializing Assets...", "Syncing Player Data...", "Configuring Boss Farm...", "Welcome!" }
     for i, s in ipairs(steps) do
         StatusTxt.Text = s
         TweenService:Create(Logo, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
             { Rotation = i * 360 }):Play()
-        task.wait(1)
+        task.wait(0.8)
     end
 
     drift:Cancel()
@@ -288,9 +321,26 @@ MainFarm:Toggle({
 })
 
 local BossTab = Window:Tab({ Title = "Bosses", Icon = "solar:ghost-bold" })
-local BossSec = BossTab:Section({ Title = "Timed Boss Tracker", Opened = true })
+local BossAuto = BossTab:Section({ Title = "Boss Automation", Opened = true })
+local bossOptions = { "None", "All Bosses" }
+for _, b in ipairs(BossConfig) do table.insert(bossOptions, b.Name) end
+
+BossAuto:Dropdown({
+    Title = "Target Boss",
+    Values = bossOptions,
+    Callback = function(v) SelectedBoss = v end,
+})
+BossAuto:Toggle({
+    Title = "Auto Kill Boss",
+    Value = false,
+    Callback = function(v)
+        AutoBossEnabled = v; UpdateStatus(v and "Hunting Boss..." or "Ready")
+    end
+})
+
+local BossTrackerSec = BossTab:Section({ Title = "Timed Boss Tracker", Opened = false })
 for _, boss in ipairs(BossConfig) do
-    BossLabels[boss.Name] = BossSec:Paragraph({ Title = boss.Name, Desc = "Loading..." })
+    BossLabels[boss.Name] = BossTrackerSec:Paragraph({ Title = boss.Name, Desc = "Loading..." })
 end
 
 local StatsTab = Window:Tab({ Title = "Auto Stats", Icon = "solar:chart-square-bold" })
@@ -333,7 +383,16 @@ TeleSec:Dropdown({
 -- Unified Auto Farm
 task.spawn(function()
     while task.wait(0.5) do
-        if AutoFarmEnabled then
+        if AutoBossEnabled then
+            local boss = GetActiveBoss()
+            if boss then
+                UpdateStatus("Killing Boss: " .. boss.Parent.Name)
+                Player.Character.HumanoidRootPart.CFrame = boss.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0)
+                local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
+                local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
+                if hit then pcall(function() hit:FireServer() end) end
+            end
+        elseif AutoFarmEnabled then
             -- HumanoidRootPart Protection
             if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                 local npc = GetQuestNPC()
@@ -350,12 +409,9 @@ task.spawn(function()
                 if target and target:FindFirstChild("HumanoidRootPart") then
                     UpdateStatus("Farming: " .. target.Name)
                     Player.Character.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0)
-
                     local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
                     local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
-                    if hit then 
-                        pcall(function() hit:FireServer() end)
-                    end
+                    if hit then pcall(function() hit:FireServer() end) end
                 else
                     UpdateStatus("Scanning Targets...")
                 end
@@ -420,4 +476,4 @@ end)
 HomeTab:Select()
 task.spawn(RunLoader, Window)
 
-print("NattHUB | v3.3.0 Global Release")
+print("NattHUB | v3.4.0 Global Release")
