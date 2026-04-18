@@ -299,33 +299,32 @@ task.spawn(function()
     while task.wait(0.5) do
         if AutoFarmEnabled then
             -- HumanoidRootPart Protection
-            if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then
-                UpdateStatus("Waiting for Character...")
-                continue
-            end
+            if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                local npc = GetQuestNPC()
+                -- Quest Cooldown (5 Seconds)
+                if npc and npc:FindFirstChild("HumanoidRootPart") and (tick() - LastQuestClaimed > 5) then
+                    UpdateStatus("Accepting Quest: " .. npc.Name)
+                    pcall(function()
+                        ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(npc)
+                    end)
+                    LastQuestClaimed = tick()
+                end
 
-            local npc = GetQuestNPC()
-            -- Quest Cooldown (5 Seconds)
-            if npc and npc:FindFirstChild("HumanoidRootPart") and (tick() - LastQuestClaimed > 5) then
-                UpdateStatus("Accepting Quest: " .. npc.Name)
-                pcall(function()
-                    ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(npc)
-                end)
-                LastQuestClaimed = tick()
-            end
+                local target = GetTargetMob()
+                if target and target:FindFirstChild("HumanoidRootPart") then
+                    UpdateStatus("Farming: " .. target.Name)
+                    Player.Character.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0)
 
-            local target = GetTargetMob()
-            if target and target:FindFirstChild("HumanoidRootPart") then
-                UpdateStatus("Farming: " .. target.Name)
-                Player.Character.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0)
-
-                local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
-                local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
-                if hit then 
-                    pcall(function() hit:FireServer() end)
+                    local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
+                    local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
+                    if hit then 
+                        pcall(function() hit:FireServer() end)
+                    end
+                else
+                    UpdateStatus("Scanning Targets...")
                 end
             else
-                UpdateStatus("Scanning Targets...")
+                UpdateStatus("Waiting for Character...")
             end
         end
     end
