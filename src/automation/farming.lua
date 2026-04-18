@@ -118,7 +118,7 @@ function Farming.Init(Project)
                         Project.UpdateStatus("Accepting Quest: " .. npc.Name)
                         Helpers.To(npc.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0), true)
                         task.wait(0.5)
-                        pcall(function() ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(npc) end)
+                        pcall(function() ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(npc.Name) end)
                         State.LastQuestClaimed = tick()
                     end
 
