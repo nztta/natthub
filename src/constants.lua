@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global
 -- [[ NattHUB | Constants & Data ]]
 local Constants = {}
 

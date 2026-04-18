@@ -55,6 +55,12 @@ local Sync = GetSource("src/ui/sync.lua")
 local Farming = GetSource("src/automation/farming.lua")
 local Stats = GetSource("src/automation/stats.lua")
 
+-- [[ ROBUSTNESS CHECK ]]
+if not (Loader and UIManager and Tabs and Sync and Farming and Stats) then
+    warn("NattHUB: One or more modules failed to load. Script terminated.")
+    return
+end
+
 -- [[ EXECUTION ]]
 Project.Window = UIManager.Init(Project)
 Tabs.Create(Project)

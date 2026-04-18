@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global
 -- [[ NattHUB | Stats Automation ]]
 local Stats = {}
 

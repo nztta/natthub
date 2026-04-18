@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global
 -- [[ NattHUB | UI Main Window ]]
 local UIManager = {}
 

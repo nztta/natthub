@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global
 -- [[ NattHUB | UI Loader Animation ]]
 local Loader = {}
 
