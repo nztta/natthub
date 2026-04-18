@@ -195,9 +195,18 @@ function Helpers.To(targetCFrame, stayStill)
                 postBv.Parent = hrp
             end
         else
-            hrp.Anchored = false
+            Helpers.UnlockCharacter()
         end
     end)
+end
+
+function Helpers.UnlockCharacter()
+    if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = Player.Character.HumanoidRootPart
+        hrp.Anchored = false
+        local bv = hrp:FindFirstChild("NattHUB_AntiFall")
+        if bv then bv:Destroy() end
+    end
 end
 
 function Helpers.IsBossAlive(bossName)
@@ -438,9 +447,7 @@ local function CreateTabs()
         Callback = function(v)
             State.AutoFarmEnabled = v
             if UI.StatusLabel then UI.StatusLabel:SetDesc(v and "Farming..." or "Ready") end
-            if not v and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-                Player.Character.HumanoidRootPart.Anchored = false
-            end
+            if not v then Helpers.UnlockCharacter() end
         end
     })
 
@@ -463,9 +470,7 @@ local function CreateTabs()
         Callback = function(v)
             State.AutoBossEnabled = v
             if UI.StatusLabel then UI.StatusLabel:SetDesc(v and "Hunting Boss..." or "Ready") end
-            if not v and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-                Player.Character.HumanoidRootPart.Anchored = false
-            end
+            if not v then Helpers.UnlockCharacter() end
         end
     })
 
@@ -879,7 +884,7 @@ local function InitAutomation()
                         end
                     end
                 else
-                    if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then Player.Character.HumanoidRootPart.Anchored = false end
+                    Helpers.UnlockCharacter()
                 end
             end)
             if not success then
