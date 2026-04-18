@@ -17,7 +17,7 @@ local Config = {
     Title = "NattHUB | Sailor Piece",
     Icon = "solar:planet-3-bold-duotone",
     LogoID = "rbxassetid://117953684635635",
-    Version = "3.2.0",
+    Version = "3.3.0",
     Folder = "NattHUB_Configs",
     Author = "by Natt Dev"
 }
@@ -67,6 +67,19 @@ local MobMapping = {
     QuestNPC19 = { "ArenaFighter1", "ArenaFighter2", "ArenaFighter3", "ArenaFighter4", "ArenaFighter5" }
 }
 
+local BossConfig = {
+    { Name = "Jinwoo", Container = "TimedBossSpawn_JinwooBoss_Container", Boss = "TimedBossSpawn_JinwooBoss" },
+    { Name = "Gojo", Container = "TimedBossSpawn_GojoBoss_Container", Boss = "TimedBossSpawn_GojoBoss" },
+    { Name = "Sukuna", Container = "TimedBossSpawn_SukunaBoss_Container", Boss = "TimedBossSpawn_SukunaBoss" },
+    { Name = "Alucard", Container = "TimedBossSpawn_AlucardBoss_Container", Boss = "TimedBossSpawn_AlucardBoss" },
+    { Name = "Aizen", Container = "TimedBossSpawn_AizenBoss_Container", Boss = "TimedBossSpawn_AizenBoss" },
+    { Name = "Madoka", Container = "TimedBossSpawn_MadokaBoss_Container", Boss = "TimedBossSpawn_MadokaBoss" },
+    { Name = "Ragna", Container = "TimedBossSpawn_RagnaBoss_Container", Boss = "TimedBossSpawn_RagnaBoss" },
+    { Name = "Strongest Shinobi", Container = "TimedBossSpawn_StrongestShinobiBoss_Container", Boss = "TimedBossSpawn_StrongestShinobiBoss" },
+    { Name = "Yamato", Container = "TimedBossSpawn_Yamato_Container", Boss = "TimedBossSpawn_YamatoBoss" },
+    { Name = "Yuji", Container = "TimedBossSpawn_YujiBoss_Container", Boss = "TimedBossSpawn_YujiBoss" }
+}
+
 -- [[ STATE ]]
 local AutoFarmEnabled = false
 local AutoStatsEnabled = false
@@ -74,6 +87,7 @@ local SelectedStat = "Melee"
 local AllocateAmount = 1
 local BotStatus = "Ready"
 local LastQuestClaimed = 0
+local BossLabels = {}
 
 -- [[ UI ELEMENTS ]]
 local StatusLabel = nil
@@ -108,6 +122,22 @@ local function UpdateStatus(text)
     if StatusLabel then
         StatusLabel:SetDesc(BotStatus)
     end
+end
+
+local function GetBossTime(config)
+    local container = workspace:FindFirstChild(config.Container)
+    if container then
+        local bossObj = container:FindFirstChild(config.Boss)
+        if bossObj then
+            -- Deep search for TextLabels containing time patterns
+            for _, v in ipairs(bossObj:GetDescendants()) do
+                if v:IsA("TextLabel") and v.Text:find(":") then
+                    return v.Text
+                end
+            end
+        end
+    end
+    return "N/A"
 end
 
 local function GetQuestNPC()
@@ -188,7 +218,7 @@ local function RunLoader(windowObj)
     drift:Play()
     TweenService:Create(Blur, TweenInfo.new(0.5), { Size = 24 }):Play()
 
-    local steps = { "Initializing Assets...", "Syncing Player Data...", "Welcome!" }
+    local steps = { "Initializing Assets...", "Syncing Player Data...", "Scanning Bosses...", "Welcome!" }
     for i, s in ipairs(steps) do
         StatusTxt.Text = s
         TweenService:Create(Logo, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
@@ -256,6 +286,12 @@ MainFarm:Toggle({
         AutoFarmEnabled = v; UpdateStatus(v and "Farming..." or "Ready")
     end
 })
+
+local BossTab = Window:Tab({ Title = "Bosses", Icon = "solar:ghost-bold" })
+local BossSec = BossTab:Section({ Title = "Timed Boss Tracker", Opened = true })
+for _, boss in ipairs(BossConfig) do
+    BossLabels[boss.Name] = BossSec:Paragraph({ Title = boss.Name, Desc = "Loading..." })
+end
 
 local StatsTab = Window:Tab({ Title = "Auto Stats", Icon = "solar:chart-square-bold" })
 local StatSec = StatsTab:Section({ Title = "Attributes", Opened = true })
@@ -365,6 +401,13 @@ local function SyncUI()
         local pts = GetPlayerData("StatPoints")
         PointsLabel:SetDesc(pts .. " Available")
     end
+    -- Boss Tracker Sync
+    for _, config in ipairs(BossConfig) do
+        local label = BossLabels[config.Name]
+        if label then
+            label:SetDesc(GetBossTime(config))
+        end
+    end
 end
 
 -- Finalization
@@ -377,4 +420,4 @@ end)
 HomeTab:Select()
 task.spawn(RunLoader, Window)
 
-print("NattHUB | v3.2.0 Global Release")
+print("NattHUB | v3.3.0 Global Release")
