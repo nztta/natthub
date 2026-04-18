@@ -14,7 +14,7 @@ local function GetSource(path)
         return game:HttpGet(url)
     end)
     if success then
-        return (loadstring or load)(result)()
+        return load(result)()
     else
         warn("NattHUB: Failed to load module -> " .. path)
         return nil

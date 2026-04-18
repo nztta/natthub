@@ -8,7 +8,7 @@ local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
 function UIManager.Init(Project)
-    local WindUI = (loadstring or load)(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+    local WindUI = load(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
     local Config = Project.Constants.Config
     
     local Window = WindUI:CreateWindow({
