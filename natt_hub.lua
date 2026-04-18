@@ -74,7 +74,7 @@ Constants.MobMapping = {
 
 Constants.BossConfig = {
     { Name = "Jinwoo",            HP = "6M",    Island = "Sailor",        Rewards = "Haki Reroll (80%), Race (50%), Trait (40%), Shadow Heart (2%), Cape (3%)", Container = "TimedBossSpawn_JinwooBoss_Container",           Boss = "TimedBossSpawn_JinwooBoss",           NPCFolder = "JinwooBoss" },
-    { Name = "Alucard",           HP = "20M",   Island = "Sailor",        Rewards = "Race (85%), Trait (80%), Soul Amulet (8%), Casull (2%), Blood Ring (2%), Coat (3%)", Container = "TimedBossSpawn_AlucardBoss_Container",          Boss = "TimedBossSpawn_AlucardBoss",          NPCFolder = "AlucardBoss" },
+    { Name = "Alucard",           HP = "20M",   Island = "Sailor",        Rewards = "Race (85%), Trait (80%), Soul Amulet (8%), Casull (2%), Blood Ring (2%), Coat (3%)", Container = "TimedBossSpawn_AlucardBoss_Container",          Boss = "TimedBossSpawn_AlucardBoss",          NPCFolder = "AlucardBoss", DependsOn = "Jinwoo" },
     { Name = "Yuji",              HP = "3.75M", Island = "Shibuya",       Rewards = "Flash Impact (9%), Divergent Pulse (4%), Yuji Hair (5%), Title (5%)", Container = "TimedBossSpawn_YujiBoss_Container",             Boss = "TimedBossSpawn_YujiBoss",             NPCFolder = "YujiBoss" },
     { Name = "Gojo",              HP = "4M",    Island = "Shibuya",       Rewards = "Limitless Key (30%), Void Fragment (20%), Limitless Ring (8%), Blindfold (5%)", Container = "TimedBossSpawn_GojoBoss_Container",             Boss = "TimedBossSpawn_GojoBoss",             NPCFolder = "GojoBoss" },
     { Name = "Sukuna",            HP = "5M",    Island = "Shibuya",       Rewards = "Malevolent Key (30%), Cursed Finger (20%), Dismantle Fang (8%), Collar (4%)", Container = "TimedBossSpawn_SukunaBoss_Container",           Boss = "TimedBossSpawn_SukunaBoss",           NPCFolder = "SukunaBoss" },
@@ -145,7 +145,38 @@ function Helpers.To(targetCFrame, stayStill)
     end
 end
 
+function Helpers.IsBossAlive(bossName)
+    local config = nil
+    for _, b in ipairs(Constants.BossConfig) do
+        if b.Name == bossName then config = b; break end
+    end
+    if not config then return false end
+    
+    local npcContainer = workspace:FindFirstChild("NPCs")
+    if npcContainer then
+        local folder = npcContainer:FindFirstChild(config.NPCFolder)
+        if folder then
+            local boss = folder:FindFirstChild("Boss")
+            if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 function Helpers.GetBossTime(config)
+    -- Check Dependency
+    if config.DependsOn and Helpers.IsBossAlive(config.DependsOn) then
+        return "Waiting"
+    end
+
+    -- Check if Spawned
+    if Helpers.IsBossAlive(config.Name) then
+        return "Spawned!"
+    end
+
+    -- Check Timer
     local container = workspace:FindFirstChild(config.Container)
     if container then
         local bossObj = container:FindFirstChild(config.Boss)
@@ -157,7 +188,7 @@ function Helpers.GetBossTime(config)
             end
         end
     end
-    return "N/A"
+    return "Waiting..."
 end
 
 -- [[ UI MANAGER ]]
