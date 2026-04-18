@@ -175,10 +175,13 @@ function Helpers.IsBossAlive(bossName)
 
     local npcContainer = workspace:FindFirstChild("NPCs")
     if npcContainer then
-        local folder = npcContainer:FindFirstChild(config.NPCFolder)
-        if folder then
-            local boss = folder:FindFirstChild("Boss")
-            if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+        local bossModel = npcContainer:FindFirstChild(config.NPCFolder)
+        if bossModel then
+            local innerBoss = bossModel:FindFirstChild("Boss")
+            if innerBoss and innerBoss:FindFirstChild("Humanoid") and innerBoss.Humanoid.Health > 0 then
+                return true
+            end
+            if bossModel:FindFirstChild("Humanoid") and bossModel.Humanoid.Health > 0 then
                 return true
             end
         end
@@ -531,11 +534,14 @@ local function InitAutomation()
         if not npcContainer then return nil end
 
         local function FindBossInFolder(folderName)
-            local folder = npcContainer:FindFirstChild(folderName)
-            if folder then
-                local boss = folder:FindFirstChild("Boss")
-                if boss and boss:FindFirstChild("HumanoidRootPart") and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
-                    return boss
+            local bossModel = npcContainer:FindFirstChild(folderName)
+            if bossModel then
+                local innerBoss = bossModel:FindFirstChild("Boss")
+                if innerBoss and innerBoss:FindFirstChild("HumanoidRootPart") and innerBoss:FindFirstChild("Humanoid") and innerBoss.Humanoid.Health > 0 then
+                    return innerBoss
+                end
+                if bossModel:FindFirstChild("HumanoidRootPart") and bossModel:FindFirstChild("Humanoid") and bossModel.Humanoid.Health > 0 then
+                    return bossModel
                 end
             end
             return nil
