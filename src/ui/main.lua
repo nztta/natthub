@@ -1,4 +1,5 @@
 ---@diagnostic disable: undefined-global
+---@diagnostic disable: deprecated
 -- [[ NattHUB | UI Main Window ]]
 local UIManager = {}
 
