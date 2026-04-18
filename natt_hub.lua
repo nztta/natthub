@@ -37,17 +37,17 @@ Constants.QuestData = {
     { Min = 1000,  Max = 1499,  NPC = "QuestNPC6",  Island = "Desert" },
     { Min = 1500,  Max = 1999,  NPC = "QuestNPC7",  Island = "Snow" },
     { Min = 2000,  Max = 2999,  NPC = "QuestNPC8",  Island = "Snow" },
-    { Min = 3000,  Max = 3999,  NPC = "QuestNPC9",  Island = "Sailor" },
-    { Min = 4000,  Max = 5000,  NPC = "QuestNPC10", Island = "Sailor" },
-    { Min = 5001,  Max = 6250,  NPC = "QuestNPC11", Island = "HallowIsland" },
-    { Min = 6251,  Max = 7000,  NPC = "QuestNPC12", Island = "HallowIsland" },
-    { Min = 7001,  Max = 8000,  NPC = "QuestNPC13", Island = "Ninja" },
-    { Min = 8001,  Max = 9000,  NPC = "QuestNPC14", Island = "Ninja" },
-    { Min = 9001,  Max = 10000, NPC = "QuestNPC15", Island = "Slime" },
-    { Min = 10001, Max = 10750, NPC = "QuestNPC16", Island = "Academy" },
-    { Min = 10751, Max = 11500, NPC = "QuestNPC17", Island = "Kadgement" },
-    { Min = 11501, Max = 12000, NPC = "QuestNPC18", Island = "Lawless" },
-    { Min = 12001, Max = 99999, NPC = "QuestNPC19", Island = "Tower" }
+    { Min = 3000,  Max = 3999,  NPC = "QuestNPC9",  Island = "Shibuya" },
+    { Min = 4000,  Max = 4999,  NPC = "QuestNPC10", Island = "Shibuya" },
+    { Min = 5000,  Max = 6249,  NPC = "QuestNPC11", Island = "HallowIsland" },
+    { Min = 6250,  Max = 6999,  NPC = "QuestNPC12", Island = "Shijuku" },
+    { Min = 7000,  Max = 7999,  NPC = "QuestNPC13", Island = "Shijuku" },
+    { Min = 8000,  Max = 8999,  NPC = "QuestNPC14", Island = "Slime" },
+    { Min = 9000,  Max = 9999,  NPC = "QuestNPC15", Island = "Academy" },
+    { Min = 10000, Max = 10749, NPC = "QuestNPC16", Island = "Kadgement" },
+    { Min = 10750, Max = 11499, NPC = "QuestNPC17", Island = "Kadgement" },
+    { Min = 11500, Max = 11999, NPC = "QuestNPC18", Island = "Ninja" },
+    { Min = 12000, Max = 99999, NPC = "QuestNPC19", Island = "Lawless" }
 }
 
 Constants.MobMapping = {
@@ -470,13 +470,19 @@ local function InitAutomation()
 
     local function GetQuestNPC()
         local myLevel = Helpers.GetCurrentLevel()
+        local hrp = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return nil end
+
         for _, q in ipairs(Constants.QuestData) do
             if myLevel >= q.Min and myLevel <= q.Max then
                 local containers = { workspace:FindFirstChild("ServiceNPCs"), workspace:FindFirstChild("NPCs"), workspace }
                 for _, container in ipairs(containers) do
                     if container then
                         local npc = container:FindFirstChild(q.NPC)
-                        if npc then return npc end
+                        if npc and npc:FindFirstChild("HumanoidRootPart") then
+                            local dist = (npc.HumanoidRootPart.Position - hrp.Position).Magnitude
+                            if dist < 3000 then return npc end
+                        end
                     end
                 end
             end
@@ -505,7 +511,7 @@ local function InitAutomation()
                     local hrp = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
                     if hrp then
                         local d = (v.HumanoidRootPart.Position - hrp.Position).Magnitude
-                        if d < dist then dist = d; closest = v end
+                        if d < dist and d < 3000 then dist = d; closest = v end
                     end
                 end
             end
