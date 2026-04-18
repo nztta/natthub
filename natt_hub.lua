@@ -119,6 +119,20 @@ local function GetCurrentLevel()
     return GetPlayerData("Level")
 end
 
+local function To(targetCFrame)
+    if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = Player.Character.HumanoidRootPart
+    local dist = (targetCFrame.Position - hrp.Position).Magnitude
+    
+    if dist > 30 then
+        local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+        tween:Play()
+        task.wait(dist / 250)
+    else
+        hrp.CFrame = targetCFrame
+    end
+end
+
 local function UpdateStatus(text)
     BotStatus = text
     if StatusLabel then
@@ -387,7 +401,7 @@ task.spawn(function()
             local boss = GetActiveBoss()
             if boss then
                 UpdateStatus("Killing Boss: " .. boss.Parent.Name)
-                Player.Character.HumanoidRootPart.CFrame = boss.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0)
+                To(boss.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0))
                 local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
                 local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
                 if hit then pcall(function() hit:FireServer() end) end
@@ -408,7 +422,7 @@ task.spawn(function()
                 local target = GetTargetMob()
                 if target and target:FindFirstChild("HumanoidRootPart") then
                     UpdateStatus("Farming: " .. target.Name)
-                    Player.Character.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0)
+                    To(target.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0))
                     local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
                     local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
                     if hit then pcall(function() hit:FireServer() end) end
