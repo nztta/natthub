@@ -176,10 +176,10 @@ function Helpers.To(targetCFrame, stayStill)
 
         if dist > 30 then
             warn("[NattHUB Debug] Distance > 30: Starting Tween Movement")
-            local tween = TweenService:Create(hrp, TweenInfo.new(dist / 150, Enum.EasingStyle.Linear),
+            local tween = TweenService:Create(hrp, TweenInfo.new(dist / 100, Enum.EasingStyle.Linear),
                 { CFrame = targetCFrame })
             tween:Play()
-            task.wait(dist / 150)
+            task.wait(dist / 100)
         else
             hrp.CFrame = targetCFrame
         end
