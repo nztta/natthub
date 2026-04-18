@@ -53,8 +53,29 @@ local StatToggles = {
 local UI = {} -- Global UI reference for dynamic updates
 
 -- [[ UI LIBRARY INITIALIZATION ]]
--- Using the verified WindUI from the documentation
-local WindUI = loadstring(game:HttpGet("https://tree-house.icu/WindUI.lua"))()
+local WindUI
+local library_url = "https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"
+
+local function LoadUI()
+    local fetch_ok, code = pcall(function() return game:HttpGet(library_url) end)
+    if not fetch_ok then return nil, "Network Error: " .. tostring(code) end
+    
+    local loader, syntax_err = loadstring(code)
+    if not loader then return nil, "Syntax Error: " .. tostring(syntax_err) end
+    
+    local run_ok, result = pcall(loader)
+    if not run_ok then return nil, "Runtime Error: " .. tostring(result) end
+    
+    return result
+end
+
+local hub, err = LoadUI()
+if hub then
+    WindUI = hub
+else
+    warn("[NattHUB Critical] " .. tostring(err))
+    return
+end
 
 local Window = WindUI:CreateWindow({
     Title = Constants.Config.Title,
