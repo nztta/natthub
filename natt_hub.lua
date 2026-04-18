@@ -238,7 +238,8 @@ function UIManager.Init()
         SideBarSize = 200
     })
 
-    if Window.Instance then Window.Instance.Enabled = false end
+    if Window.SetVisible then Window:SetVisible(false)
+    elseif Window.Instance then Window.Instance.Enabled = false end
     return Window
 end
 
@@ -263,9 +264,16 @@ function UIManager.CreateToggle()
     Stroke.Thickness = 1.5
 
     ToggleBtn.MouseButton1Click:Connect(function()
-        if Window.Instance then
-            Window.Instance.Enabled = not Window.Instance.Enabled
-            TweenService:Create(ToggleBtn, TweenInfo.new(0.2), { Rotation = Window.Instance.Enabled and 0 or 180 }):Play()
+        if Window then
+            if Window.Toggle then 
+                Window:Toggle()
+            elseif Window.Instance then
+                Window.Instance.Enabled = not Window.Instance.Enabled
+            end
+            
+            local currentState = true
+            if Window.Instance then currentState = Window.Instance.Enabled end
+            TweenService:Create(ToggleBtn, TweenInfo.new(0.2), { Rotation = currentState and 0 or 180 }):Play()
         end
     end)
 
