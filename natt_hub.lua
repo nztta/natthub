@@ -268,9 +268,6 @@ local function RunLoader(windowObj)
     local steps = { "Initializing Assets...", "Syncing Player Data...", "Configuring Boss Farm...", "Welcome!" }
     for i, s in ipairs(steps) do
         StatusTxt.Text = s
-        if s == "Syncing Player Data..." then
-            pcall(SyncUI)
-        end
         TweenService:Create(Logo, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
             { Rotation = i * 360 }):Play()
         task.wait(0.8)
@@ -284,7 +281,10 @@ local function RunLoader(windowObj)
     TweenService:Create(Blur, fade, { Size = 0 }):Play()
     task.wait(0.8)
 
-    if windowObj and windowObj.Instance then windowObj.Instance.Enabled = true end
+    if windowObj and windowObj.Instance then 
+        windowObj.Instance.Enabled = true 
+        if HomeTab then HomeTab:Select() end
+    end
     LoaderGui:Destroy()
     Blur:Destroy()
 end
@@ -490,8 +490,6 @@ task.spawn(function()
     end
 end)
 
-HomeTab:Select()
-pcall(SyncUI)
 task.spawn(RunLoader, Window)
 
 print("NattHUB | v3.5.1 Global Release")
