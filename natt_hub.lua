@@ -163,7 +163,12 @@ StatSec:Toggle({ Title = "Auto Strength", Value = false, Callback = function(v) 
 
 local QuestTab = Window:Tab({ Title = "Quest", Icon = "solar:notes-bold" })
 local QuestSec = QuestTab:Section({ Title = "Quest Automation" })
-QuestSec:Toggle({ Title = "Auto Accept Quest", Value = false, Callback = function(v) end })
+QuestSec:Toggle({ 
+    Title = "Auto Quest (Level Based)", 
+    Value = false, 
+    Callback = function(v) AutoQuestEnabled = v end 
+})
+QuestSec:Toggle({ Title = "Auto Complete Quest", Value = false, Callback = function(v) end })
 
 local TeleportTab = Window:Tab({ Title = "Teleport", Icon = "solar:map-point-wave-bold" })
 local WorldSec = TeleportTab:Section({ Title = "World Navigation" })
@@ -194,6 +199,69 @@ local SettingTab = Window:Tab({ Title = "Setting Gui", Icon = "solar:palet-2-bol
 local UISec = SettingTab:Section({ Title = "UI Customization" })
 UISec:Button({ Title = "Reset UI Position", Callback = function() Window:ResetPosition() end })
 UISec:Toggle({ Title = "Transparent Mode", Value = true, Callback = function(v) Window:SetTransparency(v) end })
+
+-- [[ QUEST DATA ]]
+local QuestData = {
+    {Min = 0, Max = 99, NPC = "QuestNPC1"},
+    {Min = 100, Max = 249, NPC = "QuestNPC2"},
+    {Min = 250, Max = 499, NPC = "QuestNPC3"},
+    {Min = 500, Max = 749, NPC = "QuestNPC4"},
+    {Min = 750, Max = 999, NPC = "QuestNPC5"},
+    {Min = 1000, Max = 1499, NPC = "QuestNPC6"},
+    {Min = 1500, Max = 1999, NPC = "QuestNPC7"},
+    {Min = 2000, Max = 2999, NPC = "QuestNPC8"},
+    {Min = 3000, Max = 3999, NPC = "QuestNPC9"},
+    {Min = 4000, Max = 5000, NPC = "QuestNPC10"},
+    {Min = 5001, Max = 6250, NPC = "QuestNPC11"},
+    {Min = 6251, Max = 7000, NPC = "QuestNPC12"},
+    {Min = 7001, Max = 8000, NPC = "QuestNPC13"},
+    {Min = 8001, Max = 9000, NPC = "QuestNPC14"},
+    {Min = 9001, Max = 10000, NPC = "QuestNPC15"},
+    {Min = 10001, Max = 10750, NPC = "QuestNPC16"},
+    {Min = 10751, Max = 11500, NPC = "QuestNPC17"},
+    {Min = 11501, Max = 12000, NPC = "QuestNPC18"},
+    {Min = 12001, Max = 99999, NPC = "QuestNPC19"}
+}
+
+local function GetCurrentLevel()
+    local stats = Player:FindFirstChild("leaderstats")
+    if stats then
+        local lv = stats:FindFirstChild("Level")
+        if lv then return lv.Value end
+    end
+    return 0
+end
+
+local AutoQuestEnabled = false
+task.spawn(function()
+    while task.wait(5) do
+        if AutoQuestEnabled then
+            local myLevel = GetCurrentLevel()
+            local targetNPCName = nil
+            
+            for _, q in ipairs(QuestData) do
+                if myLevel >= q.Min and myLevel <= q.Max then
+                    targetNPCName = q.NPC
+                    break
+                end
+            end
+            
+            if targetNPCName then
+                local npc = workspace.ServiceNPCs:FindFirstChild(targetNPCName)
+                if npc then
+                    local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents")
+                    if remotes then
+                        local questAccept = remotes:FindFirstChild("QuestAccept")
+                        if questAccept then
+                            questAccept:FireServer(npc)
+                            WindUI:Notify({ Title = "Auto Quest", Content = "Accepted quest from " .. targetNPCName, Duration = 2 })
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
 
 -- [[ FINALIZATION ]]
 local function UpdatePop()
