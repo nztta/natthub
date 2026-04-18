@@ -447,9 +447,8 @@ local function CreateTabs()
         UI.BossLabels[boss.Name] = BossTrackerSec:Paragraph({ Title = boss.Name, Desc = info .. "\nStatus: Loading..." })
     end
 
-    -- [[ COMBAT TAB ]]
-    local CombatTab = Window:Tab({ Title = "Combat", Icon = "solar:sword-bold" })
-    local WeaponSec = CombatTab:Section({ Title = "Weapon Management", Opened = true })
+    -- [[ COMBAT SETTINGS (MAIN TAB) ]]
+    local WeaponSec = MainTab:Section({ Title = "Weapon Management", Opened = false })
     
     local weaponDropdown = WeaponSec:Dropdown({
         Title = "Select Weapon",
@@ -478,7 +477,7 @@ local function CreateTabs()
         Callback = function(v) State.AutoWeaponEnabled = v end
     })
 
-    local SkillSec = CombatTab:Section({ Title = "Auto Skills", Opened = true })
+    local SkillSec = MainTab:Section({ Title = "Auto Skills", Opened = false })
     SkillSec:Toggle({ Title = "Auto Use Skills", Value = State.AutoSkillEnabled, Callback = function(v) State.AutoSkillEnabled = v end })
     SkillSec:Toggle({ Title = "Use Z Skill", Value = false, Callback = function(v) SkillToggles.Z = v end })
     SkillSec:Toggle({ Title = "Use X Skill", Value = false, Callback = function(v) SkillToggles.X = v end })
