@@ -105,7 +105,7 @@ end
 local function UpdateStatus(text)
     BotStatus = text
     if StatusLabel then
-        StatusLabel:Set({ Title = "Bot Status", Desc = BotStatus })
+        StatusLabel:SetDesc(BotStatus)
     end
 end
 
@@ -280,7 +280,7 @@ StatSec:Button({
 })
 
 local TeleTab = Window:Tab({ Title = "Teleport", Icon = "solar:map-point-wave-bold" })
-local TeleSec = TeleTab:Section({ Title = "World Navigation" })
+local TeleSec = TeleTab:Section({ Title = "World Navigation", Opened = true })
 local Locs = { "Starter", "Jungle", "Desert", "Snow", "Sailor", "Shibuya", "HallowIsland", "Boss", "Dungeon", "Shijuku",
     "Slime", "Academy", "Kadgement", "Ninja", "Lawless", "Tower" }
 TeleSec:Dropdown({
@@ -333,25 +333,25 @@ end)
 -- UI Sync Loop
 local function SyncUI()
     if PopLabel then
-        PopLabel:Set({ Title = "Players on Server", Desc = #Players:GetPlayers() .. " / " .. Players.MaxPlayers })
+        PopLabel:SetDesc(#Players:GetPlayers() .. " / " .. Players.MaxPlayers)
     end
     if LevelLabel then
         local lv = GetPlayerData("Level")
         local exp = GetPlayerData("Experience")
-        LevelLabel:Set({ Title = "Level", Desc = "Lv. " .. lv .. " (" .. exp .. " EXP)" })
+        LevelLabel:SetDesc("Lv. " .. lv .. " (" .. exp .. " EXP)")
     end
     if MoneyLabel then
         local money = GetPlayerData("Money")
         local gems = GetPlayerData("Gems")
-        MoneyLabel:Set({ Title = "Currency", Desc = money .. " Money | " .. gems .. " Gems" })
+        MoneyLabel:SetDesc(money .. " Money | " .. gems .. " Gems")
     end
     if BountyLabel then
         local bounty = GetPlayerData("Bounty")
-        BountyLabel:Set({ Title = "Bounty", Desc = bounty .. " Bounty" })
+        BountyLabel:SetDesc(bounty .. " Bounty")
     end
     if PointsLabel then
         local pts = GetPlayerData("StatPoints")
-        PointsLabel:Set({ Title = "Stat Points", Desc = pts .. " Available" })
+        PointsLabel:SetDesc(pts .. " Available")
     end
 end
 
