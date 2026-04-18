@@ -12,7 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
-local VERSION = "3.5.3 (Debug)"
+local VERSION = "3.5.4"
 local Config = {
     Version = VERSION,
     Title = "NattHUB | Sailor Piece " .. VERSION,
@@ -24,25 +24,25 @@ local Config = {
 
 -- [[ DATA MODELS ]]
 local QuestData = {
-    { Min = 0,     Max = 99,    NPC = "QuestNPC1" },
-    { Min = 100,   Max = 249,   NPC = "QuestNPC2" },
-    { Min = 250,   Max = 499,   NPC = "QuestNPC3" },
-    { Min = 500,   Max = 749,   NPC = "QuestNPC4" },
-    { Min = 750,   Max = 999,   NPC = "QuestNPC5" },
-    { Min = 1000,  Max = 1499,  NPC = "QuestNPC6" },
-    { Min = 1500,  Max = 1999,  NPC = "QuestNPC7" },
-    { Min = 2000,  Max = 2999,  NPC = "QuestNPC8" },
-    { Min = 3000,  Max = 3999,  NPC = "QuestNPC9" },
-    { Min = 4000,  Max = 5000,  NPC = "QuestNPC10" },
-    { Min = 5001,  Max = 6250,  NPC = "QuestNPC11" },
-    { Min = 6251,  Max = 7000,  NPC = "QuestNPC12" },
-    { Min = 7001,  Max = 8000,  NPC = "QuestNPC13" },
-    { Min = 8001,  Max = 9000,  NPC = "QuestNPC14" },
-    { Min = 9001,  Max = 10000, NPC = "QuestNPC15" },
-    { Min = 10001, Max = 10750, NPC = "QuestNPC16" },
-    { Min = 10751, Max = 11500, NPC = "QuestNPC17" },
-    { Min = 11501, Max = 12000, NPC = "QuestNPC18" },
-    { Min = 12001, Max = 99999, NPC = "QuestNPC19" }
+    { Min = 0,     Max = 99,    NPC = "QuestNPC1",  Island = "Starter" },
+    { Min = 100,   Max = 249,   NPC = "QuestNPC2",  Island = "Starter" },
+    { Min = 250,   Max = 499,   NPC = "QuestNPC3",  Island = "Jungle" },
+    { Min = 500,   Max = 749,   NPC = "QuestNPC4",  Island = "Jungle" },
+    { Min = 750,   Max = 999,   NPC = "QuestNPC5",  Island = "Desert" },
+    { Min = 1000,  Max = 1499,  NPC = "QuestNPC6",  Island = "Desert" },
+    { Min = 1500,  Max = 1999,  NPC = "QuestNPC7",  Island = "Snow" },
+    { Min = 2000,  Max = 2999,  NPC = "QuestNPC8",  Island = "Snow" },
+    { Min = 3000,  Max = 3999,  NPC = "QuestNPC9",  Island = "Sailor" },
+    { Min = 4000,  Max = 5000,  NPC = "QuestNPC10", Island = "Sailor" },
+    { Min = 5001,  Max = 6250,  NPC = "QuestNPC11", Island = "HallowIsland" },
+    { Min = 6251,  Max = 7000,  NPC = "QuestNPC12", Island = "HallowIsland" },
+    { Min = 7001,  Max = 8000,  NPC = "QuestNPC13", Island = "Ninja" },
+    { Min = 8001,  Max = 9000,  NPC = "QuestNPC14", Island = "Ninja" },
+    { Min = 9001,  Max = 10000, NPC = "QuestNPC15", Island = "Slime" },
+    { Min = 10001, Max = 10750, NPC = "QuestNPC16", Island = "Academy" },
+    { Min = 10751, Max = 11500, NPC = "QuestNPC17", Island = "Kadgement" },
+    { Min = 11501, Max = 12000, NPC = "QuestNPC18", Island = "Lawless" },
+    { Min = 12001, Max = 99999, NPC = "QuestNPC19", Island = "Tower" }
 }
 
 local MobMapping = {
@@ -119,39 +119,24 @@ local function GetCurrentLevel()
     return GetPlayerData("Level")
 end
 
-local function To(targetCFrame)
-    if not targetCFrame then print("NattHUB Debug | ERROR: Target CFrame is nil!") return end
-    if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then 
-        print("NattHUB Debug | ERROR: HumanoidRootPart not found!") 
-        return 
-    end
-    
+local function To(targetCFrame, stayStill)
+    if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then return end
     local hrp = Player.Character.HumanoidRootPart
     local dist = (targetCFrame.Position - hrp.Position).Magnitude
-    print(string.format("NattHUB Debug | Travel Start - Dist: %.1f | Target: %s", dist, tostring(targetCFrame.Position)))
 
-    -- Visual Debug Part
-    local DebugPart = Instance.new("Part")
-    DebugPart.Size = Vector3.new(2, 2, 2)
-    DebugPart.Color = Color3.fromRGB(255, 0, 0)
-    DebugPart.Shape = Enum.PartType.Ball
-    DebugPart.Anchored = true
-    DebugPart.CanCollide = false
-    DebugPart.Material = Enum.Material.Neon
-    DebugPart.CFrame = targetCFrame
-    DebugPart.Parent = workspace
-    DebugPart.Name = "NattHUB_DebugTarget"
-
-    if dist > 15 then
-        local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+    hrp.Anchored = false -- Ensure we are mobile during travel
+    if dist > 30 then
+        local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear),
+            { CFrame = targetCFrame })
         tween:Play()
         task.wait(dist / 250)
     else
         hrp.CFrame = targetCFrame
     end
     
-    DebugPart:Destroy()
-    print("NattHUB Debug | Travel Success - Arrived at Target.")
+    if stayStill then
+        hrp.Anchored = true
+    end
 end
 
 local function UpdateStatus(text)
@@ -431,41 +416,63 @@ task.spawn(function()
             local boss = GetActiveBoss()
             if boss then
                 UpdateStatus("Killing Boss: " .. boss.Parent.Name)
-                To(boss.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0))
+                To(boss.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0), true)
                 local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
                 local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
                 if hit then pcall(function() hit:FireServer() end) end
+            else
+                if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                    Player.Character.HumanoidRootPart.Anchored = false
+                end
             end
         elseif AutoFarmEnabled then
             -- HumanoidRootPart Protection
             if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                 local npc = GetQuestNPC()
-                -- Quest Cooldown (5 Seconds)
+                
+                -- Island Warp Check
+                if not npc then
+                    local myLevel = GetCurrentLevel()
+                    for _, q in ipairs(QuestData) do
+                        if myLevel >= q.Min and myLevel <= q.Max then
+                            UpdateStatus("Warping to Island: " .. q.Island)
+                            ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("TeleportToPortal"):FireServer(q.Island)
+                            task.wait(3) -- Wait for assets to load
+                            break
+                        end
+                    end
+                end
+
+                -- Quest Interaction
                 if npc and npc:FindFirstChild("HumanoidRootPart") and (tick() - LastQuestClaimed > 5) then
-                    print("NattHUB Debug | Objective: Accept Quest from " .. npc.Name)
-                    To(npc.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0))
+                    UpdateStatus("Accepting Quest: " .. npc.Name)
+                    To(npc.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0), true)
                     task.wait(0.5)
                     pcall(function()
                         ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(npc)
-                        print("NattHUB Debug | Quest Remote Fired.")
                     end)
                     LastQuestClaimed = tick()
                 end
 
                 local target = GetTargetMob()
                 if target and target:FindFirstChild("HumanoidRootPart") then
-                    print("NattHUB Debug | Objective: Farm Mob " .. target.Name)
-                    To(target.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0))
+                    UpdateStatus("Farming: " .. target.Name)
+                    To(target.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0), true)
                     local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
-                    local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
+                    local hit = combat and combat:FindFirstChild("Remotes") and
+                        combat.Remotes:FindFirstChild("RequestHit")
                     if hit then pcall(function() hit:FireServer() end) end
                 else
-                    if not target then
-                        print("NattHUB Debug | Waiting for Target Spawn...")
-                    end
+                    UpdateStatus("Scanning Targets...")
+                    Player.Character.HumanoidRootPart.Anchored = false
                 end
             else
                 UpdateStatus("Waiting for Character...")
+            end
+        else
+            -- Ensure anchoring is released when nothing is enabled
+            if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                Player.Character.HumanoidRootPart.Anchored = false
             end
         end
     end
