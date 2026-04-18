@@ -469,10 +469,13 @@ local function CreateTabs()
     local HomeTab = Window:Tab({ Title = "Home", Icon = "solar:home-2-bold" })
 
     local PlayerSec = HomeTab:Section({ Title = "Player Information", Opened = true })
+    UI.HealthLabel = PlayerSec:Paragraph({ Title = "Health", Desc = "Calculating..." })
     UI.LevelLabel = PlayerSec:Paragraph({ Title = "Level", Desc = "Loading..." })
-    UI.MoneyLabel = PlayerSec:Paragraph({ Title = "Currency", Desc = "0 Money | 0 Gems" })
-    UI.BountyLabel = PlayerSec:Paragraph({ Title = "Bounty", Desc = "0 Bounty" })
-    UI.PointsLabel = PlayerSec:Paragraph({ Title = "Stat Points", Desc = "0 Available" })
+    UI.ExpLabel = PlayerSec:Paragraph({ Title = "Experience", Desc = "0 EXP" })
+    UI.MoneyLabel = PlayerSec:Paragraph({ Title = "Money", Desc = "0" })
+    UI.GemsLabel = PlayerSec:Paragraph({ Title = "Gems", Desc = "0" })
+    UI.BountyLabel = PlayerSec:Paragraph({ Title = "Bounty", Desc = "0" })
+    UI.PointsLabel = PlayerSec:Paragraph({ Title = "Stat Points", Desc = "0" })
 
     local DashboardSec = HomeTab:Section({ Title = "Engine Status", Opened = true })
     UI.StatusLabel = DashboardSec:Paragraph({ Title = "Bot Status", Desc = "Ready" })
@@ -659,29 +662,49 @@ local function InitSync()
             end
         end)
 
-        -- Level/Exp Sync
+        -- Health Sync
         pcall(function()
-            if UI.LevelLabel then
-                local lv = Helpers.GetPlayerData("Level")
-                local exp = Helpers.GetPlayerData("Experience")
-                if exp == 0 then exp = Helpers.GetPlayerData("Exp") or 0 end
-                if exp == 0 then exp = Helpers.GetPlayerData("XP") or 0 end
-                UI.LevelLabel:SetDesc("Lv. " .. tostring(lv) .. " (" .. tostring(exp) .. " EXP)")
+            if UI.HealthLabel then
+                local h, m = Helpers.GetHealthFromUI()
+                UI.HealthLabel:SetDesc(tostring(h) .. " / " .. tostring(m))
             end
         end)
 
-        -- Currency Sync
+        -- Level Sync
+        pcall(function()
+            if UI.LevelLabel then
+                local lv = Helpers.GetPlayerData("Level")
+                UI.LevelLabel:SetDesc(tostring(lv))
+            end
+        end)
+
+        -- EXP Sync
+        pcall(function()
+            if UI.ExpLabel then
+                local exp = Helpers.GetPlayerData("Experience")
+                if exp == 0 then exp = Helpers.GetPlayerData("Exp") or 0 end
+                if exp == 0 then exp = Helpers.GetPlayerData("XP") or 0 end
+                UI.ExpLabel:SetDesc(tostring(exp))
+            end
+        end)
+
+        -- Money Sync
         pcall(function()
             if UI.MoneyLabel then
                 local money = Helpers.GetPlayerData("Money")
                 if money == 0 then money = Helpers.GetPlayerData("Beli") or 0 end
                 if money == 0 then money = Helpers.GetPlayerData("Cash") or 0 end
                 if money == 0 then money = Helpers.GetPlayerData("Gold") or 0 end
+                UI.MoneyLabel:SetDesc(tostring(money))
+            end
+        end)
 
+        -- Gems Sync
+        pcall(function()
+            if UI.GemsLabel then
                 local gems = Helpers.GetPlayerData("Gems")
                 if gems == 0 then gems = Helpers.GetPlayerData("Diamonds") or 0 end
-
-                UI.MoneyLabel:SetDesc(tostring(money) .. " Money | " .. tostring(gems) .. " Gems")
+                UI.GemsLabel:SetDesc(tostring(gems))
             end
         end)
 
@@ -690,7 +713,7 @@ local function InitSync()
             if UI.BountyLabel then
                 local bounty = Helpers.GetPlayerData("Bounty")
                 if bounty == 0 then bounty = Helpers.GetPlayerData("Honor") or 0 end
-                UI.BountyLabel:SetDesc(tostring(bounty) .. " Bounty")
+                UI.BountyLabel:SetDesc(tostring(bounty))
             end
         end)
 
@@ -699,7 +722,7 @@ local function InitSync()
             if UI.PointsLabel then
                 local pts = Helpers.GetPlayerData("StatPoints")
                 if pts == 0 then pts = Helpers.GetPlayerData("Points") or 0 end
-                UI.PointsLabel:SetDesc(tostring(pts) .. " Available")
+                UI.PointsLabel:SetDesc(tostring(pts))
             end
         end)
 
