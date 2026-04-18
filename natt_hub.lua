@@ -44,8 +44,8 @@ Constants.QuestData = {
     { Min = 7000,  Max = 7999,  NPC = "QuestNPC13", Island = "Shijuku" },
     { Min = 8000,  Max = 8999,  NPC = "QuestNPC14", Island = "Slime" },
     { Min = 9000,  Max = 9999,  NPC = "QuestNPC15", Island = "Academy" },
-    { Min = 10000, Max = 10749, NPC = "QuestNPC16", Island = "Judgement" },
-    { Min = 10750, Max = 11499, NPC = "QuestNPC17", Island = "Judgement" },
+    { Min = 10000, Max = 10749, NPC = "QuestNPC16", Island = "Kadgement" },
+    { Min = 10750, Max = 11499, NPC = "QuestNPC17", Island = "Kadgement" },
     { Min = 11500, Max = 11999, NPC = "QuestNPC18", Island = "Ninja" },
     { Min = 12000, Max = 99999, NPC = "QuestNPC19", Island = "Lawless" }
 }
@@ -657,10 +657,15 @@ local function InitAutomation()
                                         warn("[NattHUB Debug] Warp Required -> " .. q.Island)
                                         if UI.StatusLabel then UI.StatusLabel:SetDesc("Warping to Island: " .. q.Island) end
                                         
-                                        local warpRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("TeleportToPortal")
-                                        if warpRemote then warpRemote:FireServer(q.Island) end
+                                        local remotesFolder = ReplicatedStorage:WaitForChild("Remotes", 5)
+                                        local warpRemote = remotesFolder and remotesFolder:WaitForChild("TeleportToPortal", 5)
+                                        if warpRemote then 
+                                            pcall(function() warpRemote:FireServer(q.Island) end) 
+                                        else
+                                            warn("[NattHUB Error] Could not find TeleportToPortal Remote!")
+                                        end
                                         
-                                        task.wait(3); break
+                                        task.wait(4); break
                                     end
                                 end
                             else
