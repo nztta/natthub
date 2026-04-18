@@ -95,6 +95,7 @@ local State = {
     SelectedBoss = "None",
     AllocateAmount = 1,
     LastQuestClaimed = 0,
+    LastWarpTime = 0,
     BotStatus = "Ready"
 }
 local StatToggles = { Melee = false, Defense = false, Sword = false, Power = false }
@@ -712,30 +713,61 @@ local function InitAutomation()
                         local npc = nil
 
                         if not hasQuest then
-                            warn("[NattHUB Debug] No active quest. Looking for Quest NPC...")
-                            npc = GetQuestNPC()
-                            if not npc then
-                                warn("[NattHUB Debug] No NPC found within 3000 studs. Checking Island Warp...")
-                                local myLevel = Helpers.GetCurrentLevel()
-                                for _, q in ipairs(Constants.QuestData) do
-                                    if myLevel >= q.Min and myLevel <= q.Max then
-                                        warn("[NattHUB Debug] Warp Required -> " .. q.Island)
-                                        if UI.StatusLabel then UI.StatusLabel:SetDesc("Warping to Island: " .. q.Island) end
+                            local myLevel = Helpers.GetCurrentLevel()
+                            local questConfig = nil
+                            for _, q in ipairs(Constants.QuestData) do
+                                if myLevel >= q.Min and myLevel <= q.Max then
+                                    questConfig = q; break
+                                end
+                            end
 
-                                        local remotesFolder = ReplicatedStorage:WaitForChild("Remotes", 5)
-                                        local warpRemote = remotesFolder and
-                                        remotesFolder:WaitForChild("TeleportToPortal", 5)
-                                        if warpRemote then
-                                            pcall(function() warpRemote:FireServer(q.Island) end)
-                                        else
-                                            warn("[NattHUB Error] Could not find TeleportToPortal Remote!")
+                            if questConfig then
+                                -- Global Search for NPC (Verify Presence)
+                                local foundNPC = nil
+                                local containers = { workspace:FindFirstChild("ServiceNPCs"), workspace:FindFirstChild("NPCs"), workspace }
+                                for _, container in ipairs(containers) do
+                                    if container then
+                                        local candidate = container:FindFirstChild(questConfig.NPC)
+                                        if candidate and candidate:FindFirstChild("HumanoidRootPart") then
+                                            foundNPC = candidate; break
                                         end
-
-                                        task.wait(4); break
                                     end
                                 end
-                            else
-                                warn("[NattHUB Debug] NPC Found: " .. npc.Name)
+
+                                local hrp = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+                                if hrp and foundNPC then
+                                    local dist = (foundNPC.HumanoidRootPart.Position - hrp.Position).Magnitude
+                                    if dist < 25 then
+                                        warn("[NattHUB Debug] Above Quest NPC head. Ready to claim.")
+                                        npc = foundNPC
+                                    else
+                                        -- Found but not on head - Warp Required
+                                        if tick() - State.LastWarpTime > 10 then
+                                            warn("[NattHUB Debug] NPC found but too far (" .. math.floor(dist) .. " studs). Retrying Warp...")
+                                            if UI.StatusLabel then UI.StatusLabel:SetDesc("Retrying Warp: " .. questConfig.Island) end
+                                            local warpRemote = ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild("TeleportToPortal", 5)
+                                            if warpRemote then 
+                                                pcall(function() warpRemote:FireServer(questConfig.Island) end)
+                                                State.LastWarpTime = tick()
+                                            end
+                                        else
+                                            if UI.StatusLabel then UI.StatusLabel:SetDesc("Warp Cooldown... (" .. math.floor(10 - (tick() - State.LastWarpTime)) .. "s)") end
+                                        end
+                                    end
+                                else
+                                    -- NPC Not found at all in workspace - Warp Required
+                                    if tick() - State.LastWarpTime > 10 then
+                                        warn("[NattHUB Debug] NPC " .. questConfig.NPC .. " NOT FOUND. Warping to " .. questConfig.Island)
+                                        if UI.StatusLabel then UI.StatusLabel:SetDesc("Island Warp: " .. questConfig.Island) end
+                                        local warpRemote = ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild("TeleportToPortal", 5)
+                                        if warpRemote then 
+                                            pcall(function() warpRemote:FireServer(questConfig.Island) end)
+                                            State.LastWarpTime = tick()
+                                        end
+                                    else
+                                        if UI.StatusLabel then UI.StatusLabel:SetDesc("Warp Cooldown... (" .. math.floor(10 - (tick() - State.LastWarpTime)) .. "s)") end
+                                    end
+                                end
                             end
                         end
 
