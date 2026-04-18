@@ -136,12 +136,20 @@ function Helpers.To(targetCFrame, stayStill)
             { CFrame = targetCFrame })
         tween:Play()
         task.wait(dist / 250)
+        
+        -- Check if we should still be anchored/staying still
+        if not (State.AutoFarmEnabled or State.AutoBossEnabled) then
+            hrp.Anchored = false
+            return
+        end
     else
         hrp.CFrame = targetCFrame
     end
 
-    if stayStill then
+    if stayStill and (State.AutoFarmEnabled or State.AutoBossEnabled) then
         hrp.Anchored = true
+    else
+        hrp.Anchored = false
     end
 end
 
@@ -366,6 +374,9 @@ local function CreateTabs()
         Callback = function(v)
             State.AutoFarmEnabled = v
             if UI.StatusLabel then UI.StatusLabel:SetDesc(v and "Farming..." or "Ready") end
+            if not v and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                Player.Character.HumanoidRootPart.Anchored = false
+            end
         end
     })
 
@@ -388,6 +399,9 @@ local function CreateTabs()
         Callback = function(v)
             State.AutoBossEnabled = v
             if UI.StatusLabel then UI.StatusLabel:SetDesc(v and "Hunting Boss..." or "Ready") end
+            if not v and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                Player.Character.HumanoidRootPart.Anchored = false
+            end
         end
     })
 
