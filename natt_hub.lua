@@ -711,17 +711,25 @@ local function InitAutomation()
                         warn("[NattHUB Debug] --- AutoFarm Loop Start ---")
                         local hasQuest = Helpers.HasActiveQuest()
                         local npc = nil
-
-                        if not hasQuest then
-                            local myLevel = Helpers.GetCurrentLevel()
-                            local questConfig = nil
-                            for _, q in ipairs(Constants.QuestData) do
-                                if myLevel >= q.Min and myLevel <= q.Max then
-                                    questConfig = q; break
-                                end
+                        
+                        -- Determine target quest data upfront
+                        local myLevel = Helpers.GetCurrentLevel()
+                        local questConfig = nil
+                        for _, q in ipairs(Constants.QuestData) do
+                            if myLevel >= q.Min and myLevel <= q.Max then
+                                questConfig = q; break
                             end
+                        end
 
-                            if questConfig then
+                        if questConfig then
+                            local mobNames = Constants.MobMapping[questConfig.NPC]
+                            local mobDisplay = type(mobNames) == "table" and table.concat(mobNames, ", ") or tostring(mobNames)
+                            warn("[NattHUB Debug] Target Island: " .. questConfig.Island)
+                            warn("[NattHUB Debug] Target NPC: " .. questConfig.NPC)
+                            warn("[NattHUB Debug] Target Mobs: " .. mobDisplay)
+                            warn("[NattHUB Debug] HasActiveQuest Check: " .. tostring(hasQuest))
+
+                            if not hasQuest then
                                 -- Global Search for NPC (Verify Presence)
                                 local foundNPC = nil
                                 local containers = { workspace:FindFirstChild("ServiceNPCs"), workspace:FindFirstChild("NPCs"), workspace }
@@ -800,7 +808,24 @@ local function InitAutomation()
                         else
                             warn("[NattHUB Debug] No targets found in range.")
                             if UI.StatusLabel then UI.StatusLabel:SetDesc("Scanning Targets...") end
-                            Player.Character.HumanoidRootPart.Anchored = false
+                            
+                            -- FIX: If we have a quest but no targets exist, it means we are likely on the wrong island or too far. 
+                            -- Trigger a warp to the island corresponding to our level.
+                            if hasQuest and questConfig then
+                                if tick() - State.LastWarpTime > 10 then
+                                    warn("[NattHUB Debug] No targets reachable for active quest. Triggering emergency Warp to " .. questConfig.Island)
+                                    if UI.StatusLabel then UI.StatusLabel:SetDesc("Emergency Warp: " .. questConfig.Island) end
+                                    local warpRemote = ReplicatedStorage:WaitForChild("Remotes", 5):WaitForChild("TeleportToPortal", 5)
+                                    if warpRemote then 
+                                        pcall(function() warpRemote:FireServer(questConfig.Island) end)
+                                        State.LastWarpTime = tick()
+                                    end
+                                end
+                            end
+                            
+                            if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                                Player.Character.HumanoidRootPart.Anchored = false
+                            end
                         end
                     end
                 else
