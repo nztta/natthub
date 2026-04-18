@@ -670,14 +670,16 @@ local function InitAutomation()
             local targets = type(targetData) == "table" and targetData or { targetData }
             for _, name in ipairs(targets) do
                 local v = npcContainer:FindFirstChild(name)
-                local vHRP = v:FindFirstChild("HumanoidRootPart")
-                local vHum = v:FindFirstChild("Humanoid")
-                if vHRP and vHum and vHum.Health > 0 then
-                    local hrp = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        local d = (vHRP.Position - hrp.Position).Magnitude
-                        if d < dist and d < 3000 then
-                            dist = d; closest = v
+                if v then
+                    local vHRP = v:FindFirstChild("HumanoidRootPart")
+                    local vHum = v:FindFirstChild("Humanoid")
+                    if vHRP and vHum and vHum.Health > 0 then
+                        local hrp = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+                        if hrp then
+                            local d = (vHRP.Position - hrp.Position).Magnitude
+                            if d < dist and d < 3000 then
+                                dist = d; closest = v
+                            end
                         end
                     end
                 end
