@@ -513,7 +513,7 @@ local function InitAutomation()
                 local boss = GetActiveBoss()
                 if boss then
                     if UI.StatusLabel then UI.StatusLabel:SetDesc("Killing Boss: " .. boss.Parent.Name) end
-                    Helpers.To(boss.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0), true)
+                    Helpers.To(boss.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0), true)
                     local hit = ReplicatedStorage:FindFirstChild("CombatSystem") and ReplicatedStorage.CombatSystem:FindFirstChild("Remotes") and ReplicatedStorage.CombatSystem.Remotes:FindFirstChild("RequestHit")
                     if hit then pcall(function() hit:FireServer() end) end
                 else
@@ -545,8 +545,8 @@ local function InitAutomation()
                     local target = GetTargetMob()
                     if target and target:FindFirstChild("HumanoidRootPart") then
                         if UI.StatusLabel then UI.StatusLabel:SetDesc("Farming: " .. target.Name) end
-                        Helpers.To(target.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0), true)
-                        local hit = ReplicatedStorage:FindFirstChild("CombatSystem") and ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.CombatSystem.Remotes:FindFirstChild("RequestHit")
+                        Helpers.To(target.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0), true)
+                        local hit = ReplicatedStorage:FindFirstChild("CombatSystem") and ReplicatedStorage.CombatSystem:FindFirstChild("Remotes") and ReplicatedStorage.CombatSystem.Remotes:FindFirstChild("RequestHit")
                         if hit then pcall(function() hit:FireServer() end) end
                     else
                         if UI.StatusLabel then UI.StatusLabel:SetDesc("Scanning Targets...") end
