@@ -96,6 +96,8 @@ local State = {
     AllocateAmount = 1,
     LastQuestClaimed = 0,
     LastWarpTime = 0,
+    AutoHealthSafety = false,
+    IsHealing = false,
     BotStatus = "Ready"
 }
 local StatToggles = { Melee = false, Defense = false, Sword = false, Power = false }
@@ -451,6 +453,16 @@ local function CreateTabs()
         end
     })
 
+    MainFarm:Toggle({
+        Title = "Health Safety (20%)",
+        Desc = "High floating defense when health is low",
+        Value = State.AutoHealthSafety,
+        Callback = function(v)
+            State.AutoHealthSafety = v
+            if v == false then State.IsHealing = false end
+        end
+    })
+
     -- [[ BOSS TAB ]]
     local BossTab = Window:Tab({ Title = "Bosses", Icon = "solar:ghost-bold" })
     local BossAuto = BossTab:Section({ Title = "Boss Automation", Opened = true })
@@ -700,6 +712,31 @@ local function InitAutomation()
     task.spawn(function()
         while task.wait(0.5) do
             local success, err = pcall(function()
+                -- Health Safety Logic
+                if State.AutoHealthSafety and Player.Character and Player.Character:FindFirstChild("Humanoid") then
+                    local hum = Player.Character.Humanoid
+                    if hum.Health / hum.MaxHealth < 0.2 then State.IsHealing = true end
+                    if hum.Health >= hum.MaxHealth then State.IsHealing = false end
+                    
+                    if State.IsHealing then
+                        if UI.StatusLabel then 
+                            UI.StatusLabel:SetDesc(string.format("Healing (%.1f%%)...", (hum.Health/hum.MaxHealth)*100)) 
+                        end
+                        
+                        -- Find ANY target to float above for safety
+                        local safeTarget = GetActiveBoss() or GetTargetMob()
+                        if safeTarget and safeTarget:FindFirstChild("HumanoidRootPart") then
+                            Helpers.To(safeTarget.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0), true)
+                        else
+                            -- If no target nearby, just stay floating where we are safely
+                            if Player.Character:FindFirstChild("HumanoidRootPart") then
+                                Helpers.To(Player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0), true)
+                            end
+                        end
+                        return -- Skip combat actions while healing
+                    end
+                end
+
                 if State.AutoBossEnabled then
                     warn("[NattHUB Debug] --- AutoBoss Loop Start ---")
                     local boss = GetActiveBoss()
