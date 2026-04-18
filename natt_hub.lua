@@ -114,17 +114,8 @@ UI.GemsLabel = PlayerSec:Paragraph({ Title = "Gems", Desc = "0" })
 UI.MoneyLabel = PlayerSec:Paragraph({ Title = "Money", Desc = "0" })
 UI.PointsLabel = PlayerSec:Paragraph({ Title = "Stat Points", Desc = "0" })
 
-local SafetySec = HomeTab:Section({ Title = "Protection", Opened = true })
-SafetySec:Toggle({
-    Title = "Health Safety (20%)",
-    Desc = "Auto-heals/teleports when low health",
-    Value = State.AutoHealthSafety,
-    Callback = function(v) State.AutoHealthSafety = v end
-})
-
 local DashboardSec = HomeTab:Section({ Title = "Engine Status", Opened = true })
-UI.BotLabel = DashboardSec:Paragraph({ Title = "Bot status", Desc = "Initializing" })
-UI.PopLabel = DashboardSec:Paragraph({ Title = "Player on server", Desc = #Players:GetPlayers() .. " / " .. Players.MaxPlayers })
+UI.PopLabel = DashboardSec:Paragraph({ Title = "Players on server", Desc = #Players:GetPlayers() .. " / " .. Players.MaxPlayers })
 
 -- Add Discord Link
 HomeTab:Button({
@@ -135,52 +126,6 @@ HomeTab:Button({
         clipboard("https://discord.gg/natthub")
         WindUI:Notify({ Title = "Copied", Content = "Discord link copied to clipboard", Duration = 2 })
     end,
-})
-
--- [[ MAIN TAB ]]
-local MainTab = Window:Tab({ Title = "Main", Icon = "solar:star-bold" })
-local FarmSec = MainTab:Section({ Title = "Automation", Opened = true })
-
-FarmSec:Toggle({
-    Title = "Auto Farm Level",
-    Desc = "Automated grinding (Fixed initialization)",
-    Value = State.AutoFarmEnabled,
-    Callback = function(v) State.AutoFarmEnabled = v end
-})
-
-FarmSec:Toggle({
-    Title = "Auto Health Safety",
-    Desc = "Safe mode when health is low",
-    Value = State.AutoHealthSafety,
-    Callback = function(v) State.AutoHealthSafety = v end
-})
-
--- [[ STATS TAB ]] (ALLOWS MULTIPLE SELECTION)
-local StatsTab = Window:Tab({ Title = "Stats", Icon = "solar:chart-square-bold" })
-local AutoStatsSec = StatsTab:Section({ Title = "Auto Allocate Stats", Opened = true })
-
-AutoStatsSec:Toggle({
-    Title = "Enable Auto Stats",
-    Value = State.AutoStatsEnabled,
-    Callback = function(v) State.AutoStatsEnabled = v end
-})
-
-for statName, _ in pairs(StatToggles) do
-    AutoStatsSec:Toggle({
-        Title = statName,
-        Value = StatToggles[statName],
-        Callback = function(v) StatToggles[statName] = v end
-    })
-end
-
--- [[ CONFIG TAB ]]
-local ConfigTab = Window:Tab({ Title = "Config", Icon = "solar:settings-bold" })
-local ThemeSec = ConfigTab:Section({ Title = "Appearance", Opened = true })
-
-ThemeSec:Dropdown({
-    Title = "Change Theme",
-    Values = {"Dark", "Light", "Red", "Aqua", "Amethyst"},
-    Callback = function(v) Window:SetTheme(v) end
 })
 
 -- [[ DATA SYNC ]]
