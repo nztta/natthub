@@ -268,6 +268,9 @@ local function RunLoader(windowObj)
     local steps = { "Initializing Assets...", "Syncing Player Data...", "Configuring Boss Farm...", "Welcome!" }
     for i, s in ipairs(steps) do
         StatusTxt.Text = s
+        if s == "Syncing Player Data..." then
+            pcall(SyncUI)
+        end
         TweenService:Create(Logo, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
             { Rotation = i * 360 }):Play()
         task.wait(0.8)
@@ -488,6 +491,7 @@ task.spawn(function()
 end)
 
 HomeTab:Select()
+pcall(SyncUI)
 task.spawn(RunLoader, Window)
 
-print("NattHUB | v3.4.0 Global Release")
+print("NattHUB | v3.5.1 Global Release")
