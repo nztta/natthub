@@ -649,47 +649,75 @@ local function CreateTabs()
 end
 
 local function InitSync()
+    task.wait(2) -- Buffer for game data loading
+
     local function SyncUI()
-        if UI.PopLabel then
-            UI.PopLabel:SetDesc(#Players:GetPlayers() .. " / " .. Players.MaxPlayers)
-        end
-        if UI.LevelLabel then
-            local lv = Helpers.GetPlayerData("Level")
-            local exp = Helpers.GetPlayerData("Experience")
-            if exp == 0 then exp = Helpers.GetPlayerData("Exp") end
-            if exp == 0 then exp = Helpers.GetPlayerData("XP") end
-            UI.LevelLabel:SetDesc("Lv. " .. lv .. " (" .. exp .. " EXP)")
-        end
-        if UI.MoneyLabel then
-            local money = Helpers.GetPlayerData("Money")
-            if money == 0 then money = Helpers.GetPlayerData("Beli") end
-            if money == 0 then money = Helpers.GetPlayerData("Cash") end
-            if money == 0 then money = Helpers.GetPlayerData("Gold") end
-
-            local gems = Helpers.GetPlayerData("Gems")
-            if gems == 0 then gems = Helpers.GetPlayerData("Diamonds") end
-
-            UI.MoneyLabel:SetDesc(money .. " Money | " .. gems .. " Gems")
-        end
-        if UI.BountyLabel then
-            local bounty = Helpers.GetPlayerData("Bounty")
-            if bounty == 0 then bounty = Helpers.GetPlayerData("Honor") end
-            UI.BountyLabel:SetDesc(bounty .. " Bounty")
-        end
-        if UI.PointsLabel then
-            local pts = Helpers.GetPlayerData("StatPoints")
-            if pts == 0 then pts = Helpers.GetPlayerData("Points") end
-            UI.PointsLabel:SetDesc(pts .. " Available")
-        end
-        -- Boss Tracker Sync
-        for _, config in ipairs(Constants.BossConfig) do
-            local label = UI.BossLabels[config.Name]
-            if label then
-                local info = string.format("[%s @ %s]\nHP: %s\nDrops: %s", config.Name, config.Island or "Unknown",
-                    config.HP or "?", config.Rewards or "Unknown")
-                label:SetDesc(info .. "\nStatus: " .. Helpers.GetBossTime(config))
+        -- Population Sync
+        pcall(function()
+            if UI.PopLabel then
+                UI.PopLabel:SetDesc(tostring(#Players:GetPlayers()) .. " / " .. tostring(Players.MaxPlayers))
             end
-        end
+        end)
+
+        -- Level/Exp Sync
+        pcall(function()
+            if UI.LevelLabel then
+                local lv = Helpers.GetPlayerData("Level")
+                local exp = Helpers.GetPlayerData("Experience")
+                if exp == 0 then exp = Helpers.GetPlayerData("Exp") or 0 end
+                if exp == 0 then exp = Helpers.GetPlayerData("XP") or 0 end
+                UI.LevelLabel:SetDesc("Lv. " .. tostring(lv) .. " (" .. tostring(exp) .. " EXP)")
+            end
+        end)
+
+        -- Currency Sync
+        pcall(function()
+            if UI.MoneyLabel then
+                local money = Helpers.GetPlayerData("Money")
+                if money == 0 then money = Helpers.GetPlayerData("Beli") or 0 end
+                if money == 0 then money = Helpers.GetPlayerData("Cash") or 0 end
+                if money == 0 then money = Helpers.GetPlayerData("Gold") or 0 end
+
+                local gems = Helpers.GetPlayerData("Gems")
+                if gems == 0 then gems = Helpers.GetPlayerData("Diamonds") or 0 end
+
+                UI.MoneyLabel:SetDesc(tostring(money) .. " Money | " .. tostring(gems) .. " Gems")
+            end
+        end)
+
+        -- Bounty Sync
+        pcall(function()
+            if UI.BountyLabel then
+                local bounty = Helpers.GetPlayerData("Bounty")
+                if bounty == 0 then bounty = Helpers.GetPlayerData("Honor") or 0 end
+                UI.BountyLabel:SetDesc(tostring(bounty) .. " Bounty")
+            end
+        end)
+
+        -- Stat Points Sync
+        pcall(function()
+            if UI.PointsLabel then
+                local pts = Helpers.GetPlayerData("StatPoints")
+                if pts == 0 then pts = Helpers.GetPlayerData("Points") or 0 end
+                UI.PointsLabel:SetDesc(tostring(pts) .. " Available")
+            end
+        end)
+
+        -- Boss Tracker Sync
+        pcall(function()
+            for _, config in ipairs(Constants.BossConfig) do
+                local label = UI.BossLabels[config.Name]
+                if label then
+                    local info = string.format("[%s @ %s]\nHP: %s\nDrops: %s",
+                        tostring(config.Name),
+                        tostring(config.Island or "Unknown"),
+                        tostring(config.HP or "?"),
+                        tostring(config.Rewards or "Unknown")
+                    )
+                    label:SetDesc(info .. "\nStatus: " .. tostring(Helpers.GetBossTime(config)))
+                end
+            end
+        end)
     end
 
     -- Trigger initial sync immediately
