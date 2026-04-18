@@ -14,10 +14,10 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 
 -- [[ CONFIGURATION ]]
 local Config = {
-    Title = "NattHUB | Sailor Piece",
+    Version = "3.5.1",
+    Title = "NattHUB | Sailor Piece " .. Version,
     Icon = "solar:planet-3-bold-duotone",
     LogoID = "rbxassetid://117953684635635",
-    Version = "3.4.0",
     Folder = "NattHUB_Configs",
     Author = "by Natt Dev"
 }
@@ -68,16 +68,16 @@ local MobMapping = {
 }
 
 local BossConfig = {
-    { Name = "Jinwoo", Container = "TimedBossSpawn_JinwooBoss_Container", Boss = "TimedBossSpawn_JinwooBoss", NPCFolder = "JinwooBoss" },
-    { Name = "Gojo", Container = "TimedBossSpawn_GojoBoss_Container", Boss = "TimedBossSpawn_GojoBoss", NPCFolder = "GojoBoss" },
-    { Name = "Sukuna", Container = "TimedBossSpawn_SukunaBoss_Container", Boss = "TimedBossSpawn_SukunaBoss", NPCFolder = "SukunaBoss" },
-    { Name = "Alucard", Container = "TimedBossSpawn_AlucardBoss_Container", Boss = "TimedBossSpawn_AlucardBoss", NPCFolder = "AlucardBoss" },
-    { Name = "Aizen", Container = "TimedBossSpawn_AizenBoss_Container", Boss = "TimedBossSpawn_AizenBoss", NPCFolder = "AizenBoss" },
-    { Name = "Madoka", Container = "TimedBossSpawn_MadokaBoss_Container", Boss = "TimedBossSpawn_MadokaBoss", NPCFolder = "MadokaBoss" },
-    { Name = "Ragna", Container = "TimedBossSpawn_RagnaBoss_Container", Boss = "TimedBossSpawn_RagnaBoss", NPCFolder = "RagnaBoss" },
+    { Name = "Jinwoo",            Container = "TimedBossSpawn_JinwooBoss_Container",           Boss = "TimedBossSpawn_JinwooBoss",           NPCFolder = "JinwooBoss" },
+    { Name = "Gojo",              Container = "TimedBossSpawn_GojoBoss_Container",             Boss = "TimedBossSpawn_GojoBoss",             NPCFolder = "GojoBoss" },
+    { Name = "Sukuna",            Container = "TimedBossSpawn_SukunaBoss_Container",           Boss = "TimedBossSpawn_SukunaBoss",           NPCFolder = "SukunaBoss" },
+    { Name = "Alucard",           Container = "TimedBossSpawn_AlucardBoss_Container",          Boss = "TimedBossSpawn_AlucardBoss",          NPCFolder = "AlucardBoss" },
+    { Name = "Aizen",             Container = "TimedBossSpawn_AizenBoss_Container",            Boss = "TimedBossSpawn_AizenBoss",            NPCFolder = "AizenBoss" },
+    { Name = "Madoka",            Container = "TimedBossSpawn_MadokaBoss_Container",           Boss = "TimedBossSpawn_MadokaBoss",           NPCFolder = "MadokaBoss" },
+    { Name = "Ragna",             Container = "TimedBossSpawn_RagnaBoss_Container",            Boss = "TimedBossSpawn_RagnaBoss",            NPCFolder = "RagnaBoss" },
     { Name = "Strongest Shinobi", Container = "TimedBossSpawn_StrongestShinobiBoss_Container", Boss = "TimedBossSpawn_StrongestShinobiBoss", NPCFolder = "StrongestShinobiBoss" },
-    { Name = "Yamato", Container = "TimedBossSpawn_Yamato_Container", Boss = "TimedBossSpawn_YamatoBoss", NPCFolder = "YamatoBoss" },
-    { Name = "Yuji", Container = "TimedBossSpawn_YujiBoss_Container", Boss = "TimedBossSpawn_YujiBoss", NPCFolder = "YujiBoss" }
+    { Name = "Yamato",            Container = "TimedBossSpawn_Yamato_Container",               Boss = "TimedBossSpawn_YamatoBoss",           NPCFolder = "YamatoBoss" },
+    { Name = "Yuji",              Container = "TimedBossSpawn_YujiBoss_Container",             Boss = "TimedBossSpawn_YujiBoss",             NPCFolder = "YujiBoss" }
 }
 
 -- [[ STATE ]]
@@ -123,9 +123,10 @@ local function To(targetCFrame)
     if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then return end
     local hrp = Player.Character.HumanoidRootPart
     local dist = (targetCFrame.Position - hrp.Position).Magnitude
-    
+
     if dist > 30 then
-        local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+        local tween = TweenService:Create(hrp, TweenInfo.new(dist / 250, Enum.EasingStyle.Linear),
+            { CFrame = targetCFrame })
         tween:Play()
         task.wait(dist / 250)
     else
@@ -281,8 +282,8 @@ local function RunLoader(windowObj)
     TweenService:Create(Blur, fade, { Size = 0 }):Play()
     task.wait(0.8)
 
-    if windowObj and windowObj.Instance then 
-        windowObj.Instance.Enabled = true 
+    if windowObj and windowObj.Instance then
+        windowObj.Instance.Enabled = true
         if HomeTab then HomeTab:Select() end
     end
     LoaderGui:Destroy()
@@ -427,7 +428,8 @@ task.spawn(function()
                     UpdateStatus("Farming: " .. target.Name)
                     To(target.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0))
                     local combat = ReplicatedStorage:FindFirstChild("CombatSystem")
-                    local hit = combat and combat:FindFirstChild("Remotes") and combat.Remotes:FindFirstChild("RequestHit")
+                    local hit = combat and combat:FindFirstChild("Remotes") and
+                    combat.Remotes:FindFirstChild("RequestHit")
                     if hit then pcall(function() hit:FireServer() end) end
                 else
                     UpdateStatus("Scanning Targets...")
